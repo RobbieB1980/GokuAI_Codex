@@ -1291,8 +1291,14 @@ function Invoke-GradleBuildWithRequiredJava {
         $env:PATH = "$javaHome\bin;$oldPath"
         Push-Location $ProjectRoot
         try {
-            cmd /c "gradlew.bat $Tasks > `"$LogFileName`" 2>&1"
+            cmd /c "gradlew.bat $Tasks --console=plain > `"$LogFileName`" 2>&1"
             $exitCode = $LASTEXITCODE
+            if (Test-Path -LiteralPath $logPath) {
+                $logText = [IO.File]::ReadAllText($logPath)
+                $ansiPattern = "$([char]27)\[[0-?]*[ -/]*[@-~]"
+                $logText = [regex]::Replace($logText, $ansiPattern, '')
+                [IO.File]::WriteAllText($logPath, $logText, [Text.UTF8Encoding]::new($false))
+            }
         } finally {
             Pop-Location
         }
