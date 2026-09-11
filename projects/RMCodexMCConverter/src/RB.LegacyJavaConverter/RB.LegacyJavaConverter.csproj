@@ -34,6 +34,12 @@
     <None Include="..\..\lib\Build-SrgToOfficialMap.py" Link="tools\lib\Build-SrgToOfficialMap.py" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\DependencyCatalog.json" Link="tools\lib\DependencyCatalog.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\ModDependencyPipeline.ps1" Link="tools\lib\ModDependencyPipeline.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\PrimerChangeIndex.json" Link="tools\lib\PrimerChangeIndex.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\SolvedConversionIndex.json" Link="tools\lib\SolvedConversionIndex.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\primer_changes\**\*" Link="tools\lib\primer_changes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\dep_changes\**\*" Link="tools\lib\dep_changes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\overlays\**\*" Link="tools\lib\overlays\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\client-items\**\*" Link="tools\lib\client-items\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -546,7 +546,7 @@ function Write-PrimerQuickReference {
     $lines.Add('This is a condensed change index, not a replacement for the linked official primers. Only transitions after the detected source are included.') | Out-Null
     foreach ($step in $chain) {
         $lines.Add('') | Out-Null
-        $lines.Add("## $($step.from) â†’ $($step.to)") | Out-Null
+        $lines.Add("## $($step.from) -> $($step.to)") | Out-Null
         $lines.Add('') | Out-Null
         $sourceLabel = if ($step.sourceType -eq 'official-primer') { "[Official primer]($($step.officialPrimer))" } else { 'Converter-maintained bridge (no official primer published for this interval)' }
         $lines.Add("Source: $sourceLabel") | Out-Null

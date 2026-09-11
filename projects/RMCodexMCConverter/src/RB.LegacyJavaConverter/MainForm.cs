@@ -18,7 +18,7 @@ public sealed class MainForm : Form
     private readonly TextBox _txtNeo = NewTextBox();
     private readonly TextBox _txtGecko = NewTextBox();
     private readonly CheckBox _chkCompile = NewCheck("Compile after convert (build must succeed)", false);
-    private readonly CheckBox _chkDry = NewCheck("Dry run (preview only â€” no files written)", false);
+    private readonly CheckBox _chkDry = NewCheck("Dry run (preview only - no files written)", false);
     private readonly CheckBox _chkContinueNeo = NewCheck("After decompile, also scaffold NeoForge 26.2", true);
     private readonly Label _lblOptionsHint = new()
     {
@@ -48,7 +48,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = $"RMCodexMCConverter v{AppVersion} â€” Project / JAR â†’ NeoForge 26.2";
+        Text = $"RMCodexMCConverter v{AppVersion} - Project / JAR -> NeoForge 26.2";
         ClientSize = new Size(980, 760);
         MinimumSize = new Size(840, 640);
         StartPosition = FormStartPosition.CenterScreen;
@@ -72,7 +72,7 @@ public sealed class MainForm : Form
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         header.Controls.Add(new Label
         {
-            Text = $"RMCodexMCConverter v{AppVersion} â€” Project or finished JAR â†’ NeoForge 26.2",
+            Text = $"RMCodexMCConverter v{AppVersion} - Project or finished JAR -> NeoForge 26.2",
             Font = new Font("Segoe UI Semibold", 12f),
             ForeColor = Color.White,
             AutoSize = true,
@@ -101,7 +101,7 @@ public sealed class MainForm : Form
         _radJar.Margin = new Padding(0, 2, 0, 2);
         modePanel.Controls.Add(new Label
         {
-            Text = "Choose input type first â€” Mode B switches Browse to a .jar file picker.",
+            Text = "Choose input type first - Mode B switches Browse to a .jar file picker.",
             AutoSize = true,
             ForeColor = Color.Khaki,
             Margin = new Padding(0, 0, 0, 6)
@@ -199,7 +199,7 @@ public sealed class MainForm : Form
         };
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));
-        actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));
+        actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120f));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
@@ -398,11 +398,11 @@ public sealed class MainForm : Form
         if (_radJar.Checked)
         {
             _lblInput.Text = "Input .jar";
-            _btnRun.Text = (_chkContinueNeo.Checked && !_chkDry.Checked) ? "Jar â†’ 26.2" : "Decompile";
+            _btnRun.Text = (_chkContinueNeo.Checked && !_chkDry.Checked) ? "Jar -> 26.2" : "Decompile";
             _chkContinueNeo.Visible = true;
             if (!_chkDry.Checked)
             {
-                _lblOptionsHint.Text = "JAR mode: Vineflower decompile â†’ src project; optional NeoForge scaffold.";
+                _lblOptionsHint.Text = "JAR mode: Vineflower decompile -> src project; optional NeoForge scaffold.";
                 _lblOptionsHint.ForeColor = Color.FromArgb(160, 170, 180);
             }
         }
@@ -413,7 +413,7 @@ public sealed class MainForm : Form
             _chkContinueNeo.Visible = false;
             if (!_chkDry.Checked)
             {
-                _lblOptionsHint.Text = "Project mode: Forge 1.20.1 source tree â†’ NeoForge 26.2 scaffold.";
+                _lblOptionsHint.Text = "Project mode: Forge 1.20.1 source tree -> NeoForge 26.2 scaffold.";
                 _lblOptionsHint.ForeColor = Color.FromArgb(160, 170, 180);
             }
         }
@@ -462,7 +462,7 @@ public sealed class MainForm : Form
         if (dry)
         {
             _chkCompile.Checked = false;
-            _lblOptionsHint.Text = "Dry run: preview only â€” no files written.";
+            _lblOptionsHint.Text = "Dry run: preview only - no files written.";
             _lblOptionsHint.ForeColor = Color.Khaki;
         }
 
@@ -863,7 +863,7 @@ public sealed class MainForm : Form
                     _btnFixGrok.Enabled = true;
                     if (File.Exists(Path.Combine(_lastOutput, "compile-errors.log")))
                         AppendLog("See compile-errors.log for the first remaining build error.", Color.Khaki);
-                    AppendLog("Click \"Repair in Codex\" to open GokuAI with primers/cases first.", Color.Khaki);
+                    AppendLog("Click \"Repair in Codex\" to open Codex with primers and solved cases first.", Color.Khaki);
                     LaunchCodexRepairSession(offerPrompt: true);
                 }
             }
@@ -943,7 +943,7 @@ public sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            AppendLog("Failed to launch GokuAI: " + ex.Message, Color.Salmon);
+            AppendLog("Failed to launch Codex: " + ex.Message, Color.Salmon);
             MessageBox.Show(this, ex.Message, "Repair in Codex", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
