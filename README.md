@@ -37,3 +37,11 @@ attention, and llama.cpp `ngram-cache` speculative decoding.
 .\Stop-GokuBackend.ps1
 ```
 
+
+## RMCodexMCConverter
+
+Source: `C:\GokuCodexAI\projects\RMCodexMCConverter`
+
+Local self-contained build: `C:\GokuCodexAI\artifacts\RMCodexMCConverter\RMCodexMCConverter.exe`
+
+Conversion failures write `CODEX_REPAIR_REQUEST.md` and the **Repair in Codex** button opens the failed output in Codex through `C:\GokuCodexAI\Open-CodexRepairSession.ps1`.

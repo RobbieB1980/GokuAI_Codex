@@ -1,0 +1,5 @@
+2.10.12 — Fix-in-Grok skills/agents + portable downloader
+
+- GROK_REPAIR_PROMPT mandates /repair-failed-262-output, EVIDENCE_PACKET, mc-* agents, destination Java
+- gokuai-workspace-overlay + Sync-GokuaiConverterWorkspace.ps1
+- Download-Portable.ps1 for GitHub Releases Portable.zip

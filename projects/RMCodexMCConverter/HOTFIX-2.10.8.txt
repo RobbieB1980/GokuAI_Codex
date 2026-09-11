@@ -1,0 +1,1 @@
+﻿2.10.8: Converter/MCP knowledge root is C:\gokuai\Data; minecraft index under DataIndex\minecraft-knowledge (goku-data.db not replaced).

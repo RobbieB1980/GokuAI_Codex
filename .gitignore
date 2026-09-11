@@ -4,3 +4,8 @@ state/
 *.pid
 *.log
 
+
+/artifacts/
+projects/**/bin/
+projects/**/obj/
+projects/**/dist/

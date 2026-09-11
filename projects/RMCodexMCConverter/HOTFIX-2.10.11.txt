@@ -1,0 +1,6 @@
+2.10.11 — Destination Java for installer + agents
+
+- Invoke-GradleBuildWithRequiredJava / Set-ProjectDestinationJavaHome pin JDK 25
+- Build-WithDestinationJava.ps1 for Fix-in-Grok / agent validation builds
+- Write-GrokRepairPrompt + MainForm repair prompt include destination-Java mandate
+- knowledge-backup 262r: converter/destination-java.md + do-not ambient Java first

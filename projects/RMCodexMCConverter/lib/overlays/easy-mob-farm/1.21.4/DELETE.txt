@@ -1,0 +1,13 @@
+﻿# Easy Mob Farm: GameTest harness not on leaf classpath
+src/main/java/de/markusbordihn/easymobfarm/gametest/GameTestHelpers.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/LootTablesTest.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/LootTableTestHelper.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/MobFarmBlockItemsTest.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/MobFarmBlockItemTestHelper.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/ModBlockItemsTest.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/ModBlocksTest.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/ModBlocksTestHelper.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/ModItemsTest.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/ModItemsTestHelper.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/RedstoneSignalTest.java
+src/main/java/de/markusbordihn/easymobfarm/gametest/SmokeTest.java

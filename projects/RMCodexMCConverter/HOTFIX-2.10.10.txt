@@ -1,0 +1,1 @@
+﻿Tools/GUI release 2.10.10: CASE-006 Easy Mob Farm overlay + gametest always-delete + FlyingMob/modlauncher/cubemob remaps + Item.Properties ctor dedupe.

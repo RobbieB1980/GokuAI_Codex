@@ -1,0 +1,1156 @@
+# Primer chain notes: 1.20.1 -> 26.2
+
+Generated for LegacyJavaConverter rewrite planning. Source: NeoForge primers.
+
+## Primer 1.20.5
+
+### Headings
+- # Minecraft 1.20.4 -> 1.20.5 Mod Migration Primer
+- ## Pack Changes
+- ## Java 21
+- ## Data Components
+- ## Stream Codecs
+- ## Sub Predicate Types
+- ## Don't you like Holders?
+- ## ExtraCodecs to DataFixerUpper
+- ## Codec Replacements
+- ## Removed Redundant PoseStacks
+- ### No more Matrix4f in Lighting Setup
+- ## ItemInteractionResult
+- ## Enchantments, now with Definitions
+- ## Blocks: From public to protected
+- ## ItemStack Max Stack Size 99
+- ## No more magicalSpecialHackyFocus
+- ## Bootstap? No! It's Bootstrap!
+- ## Minor Migrations
+- ### StringUtil
+- ### Advancement Network Codecs
+- ### Collection Criteria Predicates
+- ### Entity Slot Criteria
+- ### Recipe Book Categories throw on default
+- ### Gui Breakup
+- ### Map Decoration Textures
+- ### Font Options
+- ### Screen Backgrounds
+- ### Holder Lookups in Data Providers
+- ### ResourceKey References
+- ### Static methods in FriendlyByteBuf
+- ### Loot Registries
+- ### PackLocationInfo
+- ### DispatchCodecs now MapCodecs
+- ### Packrat Parser
+- ### Entity Attachments
+- ### Dyeables
+- ### Potion Brewing
+- ### TooltipProvider
+- ### New Criteria Triggers
+- ### New Loot Context Parameters
+- ### Additions
+- ### Changes
+- ### Removals
+
+### Rename / removal signals
+- - `net.minecraft.core.particles.ParticleType#getDeserializer` -> `streamCodec`
+- - `net.minecraft.world.item.crafting.RecipeSerializer#fromNetwork`, `toNetwork` -> `streamCodec`
+- - `net.minecraft.world.level.gameevent.PositionSourceType#read`, `write` -> `streamCodec`
+- - `net.minecraft.advancements.critereon.EntityVariantPredicate` -> `EntitySubPredicates$EntityVariantPredicateType`
+- - `net.minecraft.gametest.framework.GameTestHelper` now takes in a `Holder<MobEffect>`
+- - `net.minecraft.network.chat.ChatType$Bound` now takes in a `Holder<ChatType>`
+- - `net.minecraft.world.effect.MobEffect#addAttributeModifier` now takes in a `Holder<Attribute>`
+- - `net.minecraft.world.effect.MobEffectInstance` now takes in a `Holder<MobEffect>`
+- - `net.minecraft.world.entity.Entity#gameEvent` now takes in a `Holder<GameEvent>`
+- - `net.minecraft.world.item.ArmorItem` now takes in a `Holder<ArmorMaterial>`
+- - `net.minecraft.world.level.LevelAccessor#gameEvent` now takes in a `Holder<GameEvent>`
+- - `net.minecraft.world.level.gameevent.GameEventListener#handleGameEvent` now takes in a `Holder<GameEvent>`
+- - `net.minecraft.world.level.gameevent.GameEventListenerRegistry#visitInRangeListeners` now takes in a `Holder<GameEvent>`
+- - `net.minecraft.Util#getOrThrow`, `getPartialOrThrow` -> `com.mojang.serialization.DataResult#getOrThrow`, `getPartialOrThrow`
+- - `withAlternative` -> `com.mojang.serialization.Codec#withAlternative`
+- - `validate` -> `com.mojang.serialization.Codec#validate`
+- - `strictOptionalField` -> `com.mojang.serialization.Codec#optionalFieldOf` as the method is now strict by default
+- - `optionalFieldOf` previously has now been replaced by `lenientOptionalFieldOf`
+- - `xor` -> `Codec#xor`
+- - `either` -> `Codec#either`
+- - `stringResolverCodec` -> `Codec#stringResolver`
+- - `recursive` -> `Codec#recursive`
+- - `lazyInitializedCodec` -> `Codec#lazyInitialized`
+- - `sizeLimitedString` -> `Codec#sizeLimitedString`
+- - `net.minecraft.nbt.NbtUtils#readGameProfile`, `#writeGameProfile` -> `ExtraCodecs#GAME_PROFILE`
+- - `writeId`, `readById` -> `Registry#getId`, `byId` and `FriendlyByteBuf#writeVarInt`
+- - `writeEither`, `readEither` -> `Codec#either`
+- - `readComponent`, `readComponentTrusted`, `writeComponent` -> `ComponentSerialization#STREAM_CODEC`, `TRUSTED_STREAM_CODEC`
+- - `writeItem`, `readItem` -> `ItemStack#OPTIONAL_STREAM_CODEC`
+- - `readGameProfile`, `writeGameProfile` ->  `ExtraCodecs#GAME_PROFILE`
+- - `readGameProfileProperties`, `writeGameProfileProperties` -> `ExtraCodecs#PROPERTY_MAP`''
+- - `readProperty`, `writeProperty` -> `ExtraCodecs#PROPERTY`
+- ## Removed Redundant PoseStacks
+- Most methods that passed around the raw `PoseStack` has had the parameter removed. Now, no `PoseStack`, or only the relevant `Pose` or `Matrix4f`, is passed.
+- - `net.minecraft.client.renderer.GameRenderer#renderLevel` no longer takes in a `PoseStack`
+- - `prepareCullFrustum` no longer takes in a `PoseStack` and only takes in the `Matrix4f` that is being operated on
+- - `renderLevel` no longer takes in a `PoseStack`
+- - `renderSectionLayer` no longer takes in a `PoseStack`
+- - `renderSky` no longer takes in a `PoseStack` and only takes in the `Matrix4f` that is being operated on
+- `Matrix4f` is no longer passed into the shader uniforms when setting up level lighting.
+- - `net.minecraft.client.particle.ParticleEngine#render(PoseStack, MultiBufferSource$BufferSource, LightTexture, Camera, float)` -> `render(LightTexture, Camera, float)`
+- - `getRarity` -> `getWeight`
+- - `getDamageBonus(int, MobType)` -> `getDamageBonus(int, EntityType<?>)`
+- - `isPathfindable(BlockState, BlockGetter, BlockPos, PathComputationType)` -> `isPathfindable(BlockState, PathComputationType)`
+- - `use` -> `useWithoutItem`
+- - `BlockStateBase$neighborChanged` -> `handleNeighborChanged`
+- - `isRandomlyTicking` -> `BlockBehaviour#isRandomlyTicking`
+- - `propagatesSkylightDown` -> `BlockBehaviour#propagatesSkylightDown`
+- - `getSoundType` -> `BlockBehaviour#getSoundType`
+- `net.minecraft.client.gui.components.events.ContainerEventHandler#magicalSpecialHackyFocus` has been removed. It did nothing but set the focused element.
+- `net.minecraft.data.worldgen.BootstapContext` has finally been renamed to `BootstrapContext`!
+- Most string transformation utility methods have been moved to `net.minecraft.util.StringUtil` with the same name
+- All network methods for advancements (`read`, `write`) have been made private or removed. They are replaced by `StreamCodec`s taking in a `RegistryFriendlyByteBuf`.
+- Most logic within the `Gui` class has been separated to private methods. Additionally, some fields have been removed in favor of using their `GuiGraphics` counterparts.
+- - `screenWidth`, `screenHeight` -> `GuiGraphics#guiWidth`, `GuiGraphics#guiHeight`
+- - `itemRenderer` has been completely removed
+- - `getMapData(String)` -> `getMapData(MapId)`
+- - `overrideMapData(String, MapItemSavedData)` -> `overrideMapData(MapId, MapItemSavedData)`
+- - `addMapData(Map<String, MapItemSavedData>)` -> `addMapData(Map<MapId, MapItemSavedData>)`
+- - `setMapData(String, MapItemSavedData)` -> `setMapData(MapId, MapItemSavedData)`
+
+## Primer 1.20.6
+
+### Headings
+- # Minecraft 1.20.5 -> 1.20.6 Mod Migration Primer
+- ## Pack Changes
+- ## Additions
+
+### Rename / removal signals
+- (few explicit rename lines in first pass)
+
+## Primer 1.21
+
+### Headings
+- # Minecraft 1.20.6 -> 1.21 Mod Migration Primer
+- ## Pack Changes
+- ## Moving Experimental Features
+- ## ResourceLocation, now Private
+- ## Depluralizing Registry and Tag Folders
+- ## Oh Rendering, why must you change so?
+- ### Vertex System
+- ### Chunk Regions
+- ## The Enchantment Datapack Object
+- ### EnchantmentEffectComponents
+- ### Enchantment Providers
+- ### Minor Changes
+- ## The Painting Variant Datapack Object
+- ## Attribute Modifiers, now with ResourceLocations
+- ## RecipeInput
+- ### CraftingInput
+- ### SingleRecipeInput
+- ## Changing Dimensions
+- ### Minor Changes
+- ## Minor Migrations
+- ### Options Screens Movement
+- ### The HolderLookup$Provider in LootTableProvider
+- ### DecoratedPotPattern Object
+- ### Jukebox Playable
+- ### Chunk Generation Reorganization
+- ### Delta Tracker
+- ### Additions
+- ### Changes
+- ### Removed
+
+### Rename / removal signals
+- All experimental features which were disabled with the `update_1_21` flag are now moved to their proper locations and implementations. Removed features flags can be seen within `net.minecraft.world.level.storage.WorldData#getRemovedFeatureFlags`.
+- - `new ResourceLocation(String, String)` -> `fromNamespaceAndPath(String, String)`
+- - `new ResourceLocation(String)` -> `parse(String)`
+- - `new ResourceLocation("minecraft", String)` -> `withDefaultNamespace(String)`
+- - `of` -> `bySeparator`
+- - `isValidResourceLocation` is removed
+- Plural references to the block, entity type, fluid, game event, and item tags have been removed. They should now use their exact registry name. The same goes for registry folders.
+- - `tags/blocks` -> `tags/block`
+- - `tags/entity_types` -> `tags/entity_type`
+- - `tags/fluids` -> `tags/fluid`
+- - `tags/game_events` -> `tags/game_event`
+- - `tags/items` -> `tags/item`
+- - `advancements` -> `advancement`
+- - `recipes` -> `recipe`
+- - `structures` -> `structure`'
+- - `loot_tables` -> `loot_table`
+- Next, vertices are added to the `VertexConsumer` using the associated methods. `#addVertex` must always be called first, followed by the settings specified in the `VertexFormat`. `#endVertex` no longer exists and is called automatically when calling `#addVertex` or when uploading the buffer.
+- - `com.mojang.blaze3d.vertex.DefaultVertexFormat`'s `VertexFormatElement`s have been moved to `VertexFormatElement`.
+- - `com.mojang.blaze3d.vertex.BufferBuilder$RenderedBuffer` -> `MeshData`
+- - `vertex` -> `addVertex`
+- - `color` -> `setColor`
+- - `uv` -> `setUv`
+- - `overlayCoords` -> `setUv1`, `setOverlay`
+- - `uv2` -> `setUv2`, `setLight`
+- - `normal` -> `setNormal`
+- - `endVertex` is removed
+- - `defaultColor`, `color` -> `setColor`, `setWhiteAlpha`
+- - `net.minecraft.client.model.Model#renderToBuffer` now takes in an integer representing the ARGB tint instead of four floats
+- - `net.minecraft.client.model.geom.ModelPart#render`, `$Cube#compile` now takes in an integer representing the ARGB tint instead of four floats
+- - `net.minecraft.client.particle.ParticleRenderType#begin(Tesselator, TextureManager)`, `end` -> `begin(BufferBuilder, TextureManager)`
+- - `minecraft:position_color_tex` -> `minecraft:position_tex_color`
+- - `minecraft:rendertype_armor_glint` -> `minecraft:rendertype_armor_entity_glint`
+- - `minecraft:rendertype_glint_direct` -> `minecraft:rendertype_glint`
+- - `immediateWithBuffers` now takes in a `SequencedMap`
+- - `end` -> `draw`
+- - `net.minecraft.client.renderer.SectionBufferBuilderPack#builder` -> `#buffer`
+- - `net.minecraft.client.renderer.ShaderInstance` no longer can change the blend mode, only `EffectInstance` can, which is applied for `PostPass`
+- - `getArmorFoilBuffer` no longer takes in a boolean to change the render type
+- - `getCompassFoilBufferDirect` is removed
+- - `com.mojang.blaze3d.vertex.BufferVertexConsumer` is removed
+- - `com.mojang.blaze3d.vertex.DefaultedVertexConsumer` is removed
+- - `net.minecraft.world.entity.Entity#doEnchantDamageEffects` has been removed
+- - `net.minecraft.world.entity.projectile.AbstractArrow#setEnchantmentEffectsFromEntity` has been removed
+- `AttributeModifier`s no longer take in a `String` representing its UUID. Instead, a `ResourceLocation` is provided to uniquely identity the modifier to apply. Attribute modifiers can be compared for `ResourceLocation`s using `#is`.
+- - `getModifier`, `hasModifier`, `removeModifier` now takes in a `ResourceLocation`
+- - `removePermanentModifier` is removed
+- - `getModifierValue`, `hasModifier`, now takes in a `ResourceLocation`
+- - `getModifierValue`, `hasModifier`, now takes in a `ResourceLocation`
+- - `changeDimension(ServerLevel)` -> `changeDimension(DimensionTransition)`
+- - `findDimensionEntryPoint` -> `Portal#getPortalDestination`
+- - `getPortalWaitTime` -> `Portal#getPortalTransitionTime`
+- - `handleInsidePortal` -> `setAsInsidePortal`
+- - `handleNetherPortal` -> `handlePortal`
+- - `teleportToWithTicket` is removed
+- - `createPortalInfo` is removed
+- - `net.minecraft.world.level.portal.PortalForce#findPortalAround` -> `findClosestPortalPosition`
+- - `net.minecraft.world.inventory.CraftingMenu#slotChangedCraftingGrid` now takes in a `RecipeHolder`
+- - `net.minecraft.client.gui.screens.recipebook.*RecipeComponent#addItemToSlot` still exists but is no longer overridded from its subclass
+- The options screens within `net.minecraft.client.gui.screens` and `net.minecraft.client.gui.screens.controls` have been moved to `net.minecraft.client.gui.screens.options` and `net.minecraft.client.gui.screens.options.controls`, respectively.
+- `net.minecraft.data.loot.LootTableProvider$SubProviderEntry` takes in a function which provides the `HolderLookup$Provider` and returns the `LootTableSubProvider`. `LootTableSubProvider#generate` no longer takes in a `HolderLookup$Provider` as its first argument.
+
+## Primer 1.21.1
+
+### Headings
+- # Minecraft 1.21 -> 1.21.1 Mod Migration Primer
+- ## Minor Migrations
+- ### Additions
+- ### Removed
+
+### Rename / removal signals
+- ### Removed
+
+## Primer 1.21.2
+
+### Headings
+- # Minecraft 1.21.1 -> 1.21.2 Mod Migration Primer
+- ## Pack Changes
+- ## The Holder Set Transition
+- ## Gui Render Types
+- ## Shader Rewrites
+- ### Shaders Files
+- ### Shader Programs
+- ## Entity Render States
+- ### Model Baking
+- ## Equipments and Items, Models and All
+- ### Item Names and Models
+- ### Enchantable, Repairable Items
+- ### Elytras -> Gliders
+- ### Tools, via Tool Materials
+- ## Armor Materials, Equipment, and Model (Textures)
+- ### `ArmorMaterial`
+- ### The Data Components
+- ### Equippable
+- ### Equipment Models?
+- ### Technical Changes to Items
+- ## Interaction Results
+- ## Instruments, the Datapack Edition
+- ## Trial Spawner Configurations, now in Datapack Form
+- ## Recipe Providers, the 'not actually' of Data Providers
+- ## The Ingredient Shift
+- ## BlockEntityTypes Privatized!
+- ## Consumables
+- ### The `Consumable` Data Component
+- ### `ConsumableListener`
+- ### `ConsumeEffect`
+- ### On Use Conversion
+- ### Cooldowns
+- ## Registry Objcet Id, in the Properties?
+- ## Properties Changes
+- ## Recipes, now in Registry format
+- ### Recipe Books
+- ### Recipe Displays
+- ### Recipe Placements
+- ### Recipe Changes
+- ### Creating Recipe Book Categories
+- ### Technical Changes
+- ## Minor Migrations
+- ### Language File Removals and Renames
+- ### Critereons, Supplied with HolderGetters
+- ### MacosUtil#IS_MACOS
+- ### Fog Parameters
+- ### New Tags
+- ### Smarter Framerate Limiting
+- ### Fuel Values
+- ### Light Emissions
+- ### Map Textures
+- ### Orientations
+- ### Minecart Behavior
+- ### EXPLOOOOSSSION!
+- ### The Removal of the Carving Generation Step
+- ### Codecable Json Reload Listener
+- ### Consecutive Executors
+- ### Mob Conversions
+- ### Ender Pearl Chunk Loading
+- ### Profilers and the Tracy Client
+- ### Tick Throttler
+- ### Context Keys
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- This means methods that provided helpers towards setting the texture or other properties that could be specified within a shader have been removed.
+- - `com.mojang.blaze3d.pipeline.RenderTarget#blitToScreen(int, int, boolean)` -> `blitAndBlendToScreen`
+- - `drawManaged` is removed
+- - `setColor` is removed - Now a parameter within the `blit` and `blitSprite` methods
+- - `blit(int, int, int, int, int, TextureAtlasSprite, *)` is removed
+- - `bufferSource` -> `drawSpecial`, not one-to-one as this takes in a consumer of the `MultiBufferSource` and ends the current batch instead of just returning the `MultiBufferSource`
+- - `net.minecraft.client.resources.metadata.gui.GuiSpriteScaling$NineSlice` now takes in a boolean representing whether the center portion of the texture should be streched to fit the size
+- - `glShaderSource` now takes in a `String` rather than a `List<String>`
+- - `Unform` no longer takes in a `Shader`
+- - `glGetAttribLocation` is removed
+- - `glBindAttribLocation` -> `VertexFormat#bindAttributes`
+- - `setShader` now takes in the `CompiledShaderProgram`, or `ShaderProgram`
+- - `runAsFancy` is removed, handled internally by `LevelRenderer#getTransparencyChain`
+- - `setProjectionMatrix` now takes in a `ProjectionType` than just the `VertexSorting`
+- - `getVertexSorting` -> `getProjectionType`; not one-to-one, but the `VertexSorting` is accessible on the `ProjectionType`
+- - `$Usage` -> `com.mojang.blaze3d.buffers.BufferUsage`
+- - `EffectInstance` class is removed, replaced by `CompiledShaderProgram` in most cases
+- - `get*Shader` -> `CoreShaders#*`
+- - `shutdownEffect` -> `clearPostEffect`
+- - `createReloadListener` -> `ShaderManager`
+- - `currentEffect` -> `currentPostEffect`
+- - `ItemBlockRenderTypes#getRenderType` no longer takes in a boolean indicating whether to use the translucent render type
+- - `ShaderInstance` -> `CompiledShaderProgram`
+- - `CHUNK_OFFSET` -> `MODEL_OFFSET`
+- - JSON shaders: `ChunkOffset` -> `ModelOffset`
+- - `LevelRenderer#graphicsChanged` is removed, handled internally by `LevelRenderer#getTransparencyChain`
+- - `PostPass` now takes in the `ResourceLocation` representing the output target instead of the in and out `RenderTarget`s or the `boolean` filter mode, the `CompiledShaderProgram` to use instead of the `ResourceProvider`, and a list of uniforms for the shader to consume
+- - No longer `AutoCloseable`
+- - `addToFrame` no longer takes in the `float` time
+- - `getEffect` -> `getShader`
+- - `addAuxAsset` -> `addInput`
+- - `process` -> `addToFrame`
+- - No longer `AutoCloseable`
+- - `getName` is removed, replaced with `ShaderProgram#configId`
+- - `process` no longer takes in the `DeltaTracker`
+- - `entityTranslucentCull`, `entityGlintDirect` is removed
+- - `Sheets#translucentCullBlockSheet` is removed
+- - `getFoilBufferDirect` is removed, replaced by `getFoilBuffer`
+- - `ITEM_COUNT_BLIT_OFFSET` -> `ITEM_DECORATION_BLIT_OFFSET`
+- `LayerDefinition`s, `MeshDefinition`s, `PartDefinition`s, and `CubeDeformation`s remain unchanged in their implementation and construction for the `ModelLayerLocation` -> `LayerDefinition` map in `LayerDefinitions`.
+- - `AgeableHierarchicalModel`, `ColorableAgeableListModel`, `AgeableListModel` -> `BabyModelTransform`
+- - `animateCrossbowCharge` now takes in a `float` representing the charge duration and `int` representing the use ticks instead of a `LivingEntity`
+- - `swingWeaponDown` now takes in a `HumanoidArm` instead of a `Mob`
+- - `createPartsBuilder` is removed
+- - `createChildren` -> `addCommonParts`, now private
+- - `createBodyModel` -> `createBoatModel`, `createChestBoatModel`
+- - `waterPatch` -> `createWaterPatch`
+- - `parts` is removed
+- - `ChestBoatModel` -> `BoatModel#createChestBoatModel`
+- - `ChestedHorseModel` class is removed and now purely lives in `LlamaModel` and `DonkeyModel`
+- - `ChestRaftModel` -> `RaftModel#createChestRaftModel`
+- - The generic now takes in a `EntityRenderState`
+- - `prepareMobModel` is removed
+- - `copyPropertiesTo` is removed, still exists in `HumanoidModel`
+- - `HierarchicalModel` class is removed
+- - `HumanoidModel#rotLerpRad` -> `Mth#rotLerpRad`
+- - `ListModel` class is removed
+- - `ModelUtils` class is removed
+- - `ParrotModel#getState` -> `getPose`, now public
+- - `PlayerModel` no longer has a generic
+
+## Primer 1.21.4
+
+### Headings
+- # Minecraft 1.21.2/3 -> 1.21.4 Mod Migration Primer
+- ## Pack Changes
+- ## Client Items
+- ### A Basic Model
+- ### Ranged Property Model
+- ### Select Property Model
+- ### Conditional Property Model
+- ### Composite Model
+- ### Special Dynamic Models
+- ### Rendering an Item
+- ### Custom Item Model Defintions
+- ## Mob Replacing Current Items
+- ## Particles, rendered through Render Types
+- ## Minor Migrations
+- ### `SimpleJsonResourceReloadListener`
+- ### MetadataSectionSerializer, replaced by Codecs
+- ### Music, now with Volume Controls
+- ### Tag Changes
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- - `getEquipmentModels` is removed, only directly accessible in the `EntityRendererProvider$Context#getEquipmentAssets`
+- - `ItemColor` -> `ItemTintSource`, not one-to-one as indexing is setup by providing multiple `ItemTintSource`s in the model list.
+- - `ItemColors` class is removed, now data generated as `ItemTintSource`s
+- - `net.minecraft.client.particle.BreakingItemParticle` now takes in an `ItemStackRenderState` instead of an `ItemStack`
+- - `BlockEntityWithoutLevelRenderer` class is removed, replaced by the `NoDataSpecialModelRenderer` datagen system
+- - `ItemInHandRenderer` now takes in an `ItemModelResolver`
+- - `ItemModelShaper` is removed, as the methods are available within the `ModelManager`
+- - `net.minecraft.client.renderer.block.BlockRenderDispatcher` now takes in a supplied `SpecialBlockModelRenderer` instead of a `BlockEntityWithoutLevelRenderer`
+- - `BakedOverrides` class is removed, replaced by the `RangeSelectItemModelProperty` datagen system
+- - `BlockModel` now takes in a `TextureSlots$Data` instead of just a material map, and no longer takes in a list of `ItemOverride`s
+- - `MISSING_MATERIAL` is removed, replaced by `minecraft:missingno`
+- - `textureMap` -> `textureSlots`, now private, not one-to-one
+- - `hasAmbientOcclusion` -> `getAmbientOcclusion`
+- - `isResolved` is removed
+- - `getOverrides` is removed
+- - `$GuiLight` -> `UnbakedModel$GuiLight`
+- - `ItemOverride` class is removed, replaced by the `RangeSelectItemModelProperty` datagen system
+- - `hasTransform` is removed
+- - `BlockEntityRenderDispatcher(Font, EntityModelSet, Supplier<BlockRenderDispatcher>, Supplier<ItemRenderer>, Supplier<EntityRenderDispatcher>)` -> `BlockEntityRenderDispatcher(Font, Supplier<EntityModelSet>, BlockRenderDispatcher, ItemModelResolver, ItemRenderer, EntityRenderDispatcher)`
+- - `renderItem` is removed, implemented in their specific classes
+- - `BlockEntityRendererProvider` now takes in an `ItemModelResolver`
+- - `$ShulkerBoxModel#animate` no longer takes in the `ShulkerBoxBlockEntity`
+- - `SkullblockRenderer#createSkullRenderers` -> `createModel`, not one-to-one
+- - `EntityRenderDispatcher` now takes in an `IteModelResolver`, a supplied `EntityModelSet` instead of the instance, and an `EquipmentAssetManager` instead of a `EquipmentModelSet`
+- - `EntityRendererProvider$Context` now takes in an `ItemModelResolver` instead of an `ItemRenderer`, and an `EquipmentAssetManager` instead of a `EquipmentModelSet`
+- - `getItemRenderer` -> `getItemModelResolver`, not one-to-one
+- - `getEquipmentModels` -> `getEquipmentAssets`
+- - `extractHumanoidRenderState` now takes in an `ItemModelResolver`
+- - `getSeedForItemStack` is removed
+- - `renderMultipleFromCount` now takes in the `ItemClusterRenderState`, and removes the `ItemRenderer`, `ItemStack`, `BakedModel`, and 3d boolean
+- - `ItemRenderer` no longer implements `ResourceManagerReloadListener`
+- - `render` -> `renderItem`, not one-to-one
+- - `renderBundleItem` is removed
+- - `getModel`, `resolveItemModel` is removed
+- - `LivingEntityRenderer#itemRenderer` -> `itemModelResolver`, not one-to-one
+- - `SkeletonRenderer#getArmPose` -> `AbstractSkeletonRenderer#getArmPose`
+- - `CustomHeadLayer` no longer takes in the `ItemRenderer`
+- - `DolphinCarryingItemLayer` no longer takes in the `ItemRenderer`
+- - `EquipmentLayerRenderer$TrimSpriteKey` now takes in a `ResourceKey<EquipmentAsset>`
+- - `FoxHeldItemLayer` no longer takes in the `ItemRenderer`
+- - The constructor no longer takes in the `ItemRenderer`
+- - `renderArmWithItem` no longer takes in the `BakedModel`, `ItemStack`, or `ItemDisplayContext` and instead the `ItemStackRenderState`
+- - `LivingEntityEmissiveLayer` now takes in a boolean which determines whether the layer is always visible
+- - `PandaHoldsItemLayer` no longer takes in the `ItemRenderer`
+- - `PlayerItemInHandLayer` no longer takes in the `ItemRenderer`
+- - `renderArmWithItem` no longer takes in the `BakedModel`, `ItemStack`, or `ItemDisplayContext` and instead the `ItemStackRenderState`
+- - `WitchItemLayer` no longer takes in the `ItemRenderer`
+- - `ItemDisplayEntityRenderState#itemRenderState`, `itemModel` -> `item`, not one-to-one
+- - `ItemEntityRenderState#itemModel`, `item` -> `ItemClusterRenderState#item`, not one-to-one
+- - `ItemFrameRenderState#itemStack`, `itemModel` -> `item`, not one-to-one
+- - `headItemModel`, `headItem` -> `headItem`, not one-to-one
+- - Arm and Hand methods moved to `ArmedEntityRenderState`
+- - `OminousItemSpawnerRenderState` -> `ItemClusterRenderState`
+- - `mainHandState`, `offHandState` -> `ArmedEntityRenderState` methods
+- - `ThrownItemRenderState#item`, `itemModel` -> `item`, not one-to-one
+- - `ClampedItemPropertyFunction`, `ItemPropertyFunction` -> `.properties.numeric.*` classes depending on the situation and property
+- - `ItemProperties` class is removed
+- - `isCustomRenderer` is removed, replaced by the special renderer system
+- - `overrides` is removed, replaced by the properties renderer system
+- - `BlockStateModelLoader` no longer takes in the missing model
+
+## Primer 1.21.5
+
+### Headings
+- # Minecraft 1.21.4 -> 1.21.5 Mod Migration Primer
+- ## Pack Changes
+- ## Handling the Removal of Block Entities Properly
+- ## Voxel Shape Helpers
+- ## Weapons, Tools, and Armor: Removing the Redundancies
+- ### Extrapolating the Saddles: Equipment Changes
+- ## Weighted List Rework
+- ## Tickets
+- ## The Game Test Overhaul
+- ### The Environment
+- ### Custom Types
+- ### Test Functions
+- ### Test Data
+- ### The Game Test Instance
+- ## Data Component Getters
+- ### Items
+- ### Entities
+- ## Tags and Parsing
+- ### Writing with Codecs
+- ### Command Parsers
+- ## Saved Data, now with Types
+- ## Render Pipeline Rework
+- ### Abstracting Open GL
+- ### Object References
+- ### Render Pipelines
+- ### Post Effects
+- ## Model Rework
+- ### Block Generators: The Variant Mutator
+- ## Minor Migrations
+- ### Entity References
+- ### Descoping Player Arguments
+- ### Component Interaction Events
+- ### Texture Atlas Reworks
+- ### Registry Context Swapper
+- ### Reload Instance Creation
+- ### Block Effect Appliers
+- ### Timer Callbacks, joining the codec club!
+- ### The JOML Backing Interfaces
+- ### Tag Changes
+- ### Mob Effects Field Renames
+- ### Very Technical Changes
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- `BlockEntity#preRemoveSideEffects` is now responsible for removing anything from the block entity before it is removed from the level. By default, if the `BlockEntity` is a `Container` instance, it will drop the contents of the container into the level. Other logic can be handled within here, but it should generally avoid removing the `BlockEntity` itself, unless the position of the block entity tends to change dynamically, like for a piston.
+- From there, the `LevelChunk` logic will call `removeBlockEntity` before calling `BlockBehaviour#affectNeighborsAfterRemoval`. This should only send the updates to other blocks indicating that this block has been removed from the level. For `BlockEntity` holders, this can be done easily by calling `Containers#updateNeighboursAfterDestroy`. Otherwise may want to call `Level#updateNeighborsAt` themselves, depending on the situation.
+- - `dropContentsOnDestroy` is removed, handled within `BlockEntity#preRemoveSideEffects` for `Container` instances
+- - `net.minecraft.world.level.block.entity.BlockEntity#preRemoveSideEffects` - Handles logic on the block entity that should happen before being removed from the level.
+- - `net.minecraft.world.level.block.state.BlockBehaviour#onRemove`, `$BlockStateBase#onRemove` -> `affectNeighborsAfterRemoval`, should only handle logic to update the surrounding neighbors rather than dropping container data
+- Most of the `Block` subclasses that had previous public or protected `VoxelShape`s are now private, renamed to a field typically called `SHAPE` or `SHAPES`. Stored `VoxelShape`s may also be in a `Function` instead of directly storing the map itself.
+- - `blockOccudes` -> `blockOccludes`
+- There have been a lot of updates to weapons, tools, and armor that removes the reliance on the hardcoded base classes of `SwordItem`, `DiggerItem`, and `ArmorItem`, respectively. These have been replaced with their associated data components `WEAPON` for damage, `TOOL` for mining, `ARMOR` for protection, and `BLOCKS_ATTACKS` for shields. Additionally, the missing attributes are usually specified by setting the `ATTRIBUTE_MODIFIERS`, `MAX_DAMAGE`, `MAX_STACK_SIZE`, `DAMAGE`, `REPAIRABLE`, and `ENCHANTABLE`. Given that pretty much all of the non-specific logic has moved to a data component, these classes have now been completely removed. Use one of the available item property methods or call `Item$Properties#component` directly to set up each item as a weapon, tool, armor, or some combination of the three.
+- // removed durability.
+- - `INSTRUMENT` now takes in an `InstrumentComponent`
+- - `BEES` now takes in a `Bees` component
+- - `RecipeProvider#trimSmithing` now takes in the key for the `TrimPattern`
+- - `SmithingTrimRecipeBuilder` now takes in a holder for the `TrimPattern`
+- - `blockUsingShield` -> `blockUsingItem`
+- - `blockedByShield` -> `blockedByItem`
+- - `hurtCurrentlyUsedShield` is removed
+- - `canDisableBlocking` -> `getSecondsToDisableBlocking`, not one-to-one
+- - `isDamageSourceBlocked` is removed
+- - `net.minecraft.world.entity.player.Player#disableShield` -> `net.minecraft.world.item.component.BlocksAttacks#disable`
+- - `AnimalArmorItem` class is removed
+- - `ArmorItem` class is removed
+- - `BannerPatternItem` class is removed
+- - `DiggerItem` class is removed
+- - `FireworkStarItem` class is removed
+- - `InstrumentItem` no longer takes in the tag key
+- - `getBreakingSound` is removed
+- - `ItemStack#getBreakingSound` is removed
+- - `PickaxeItem` class is removed
+- - `SwordItem` class is removed
+- - `ToolMaterial#applyToolProperties` now takes in a boolean of whether the weapon can disable a blocker (e.g., shield)
+- - `Tool` now takes in a boolean representing if the tool can destroy blocks in creative
+- - `Unbreakable` class is removed
+- - `humanoidProperties` -> `Item$Properties#humanoidArmor`
+- - `animalProperties` -> `Item$Properties#wolfArmor`, `horseArmor`
+- - `PolarBearModel#createBodyLayer` now takes in a boolean for if the entity is a baby
+- - `net.minecraft.client.renderer.entity.layers.HorseArmorLayer`, `SaddleLayer` -> `SimpleEquipmentLayer`
+- - `CamelRenderState#isSaddled` -> `saddle`, not one-to-one
+- - `EquineRenderState#isSaddled` -> `saddle`, not one-to-one
+- - `PigRenderState#isSaddled` -> `saddle`, not one-to-one
+- - `SaddleableRenderState` class is removed
+- - `StriderRenderState#isSaddled` -> `saddle`, not one-to-one
+- - `CamelRenderState#isSaddled` -> `saddle`, not one-to-one
+- - `getArmorSlots`, `getHandSlots`, `getArmorAndBodyArmorSlots`, `getAllSlots` are removed
+- - `getItemBySlot`, `setItemBySlot` are no longer abstract.
+- - `verfiyEquippedItem` is removed
+- - `Saddleable` interface is removed
+- - `syncSaddletoClients` is removed
+- - `getBodyArmorAccess` is removed
+- - `armor`, `offhand` -> `EQUIPMENT_SLOT_MAPPING`, not one-to-one
+- - `setSelectedHotbarSlot` -> `setSelectedSlot`
+- - `getSelected` -> `getSelectedItem`
+- - `getDestroySpeed` is removed
+- - `getArmor` is removed
+- - `Item#inventoryTick(ItemStack, Level, Entity, int, boolean)` -> `inventoryTick(ItemStack, ServerLevel, Entity, EquipmentSlot)`
+- - `SaddleItem` class is removed
+- - `net.minecraft.client.resources.model.WeightedBakedModel` now takes in a `WeightedList` instead of a `SimpleWeightedRandomList`
+- - `SimpleWeightedRandomList`, `WeightedRandomList` -> `WeightedList`, now final and not one-to-one
+- - `Weight` class is removed
+- - `WeightedEntry` -> `Weighted`
+- - `net.minecraft.util.valueproviders.WeightedListInt` now takes in a `WeightedList`
+
+## Primer 1.21.6
+
+### Headings
+- # Minecraft 1.21.5 -> 1.21.6 Mod Migration Primer
+- ## Pack Changes
+- ## GUI Changes
+- ### Prepare and Render
+- ### Element Ordering
+- ### GuiElementRenderState
+- ### Logic Changes
+- ### Contextual Bars
+- ### Dialogs
+- ### Custom Actions
+- ## Waypoints
+- ### Styles and Icons
+- ### Connections
+- ### Transmitters
+- ## Blaze3d Changes
+- ### Buffer Slices
+- ### Uniform Rework
+- ### Fog Environments
+- ### Render Pass Scissoring now only OpenGL
+- ## Tag Providers: Appender Rewrite
+- ### Copying Tags: Block and Item
+- ## Generic Encoding and Decoding: Replacing Direct NBT Access
+- ### NBT Implementations
+- ### Problem Reporter
+- ## Server Player Changes
+- ## Minor Migrations
+- ### Leashes
+- ### Removal of Mob Effects Atlas
+- ### Permission Sources
+- ### Animation Baking
+- ### ChunkSectionLayers
+- ### Tag Changes
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- - `drawInBatch` no longer returns anything
+- - `ALPHA_CUTOFF` is removed
+- - `$StringRenderOutput` -> `$PreparedTextBuilder`, no longer takes in the `MultiBufferSource`, `Matrix4f`, `$DisplayMode`, packed light coords, and the inverse depth boolean
+- - `GuiGraphics` now takes in a `GuiRenderState` instead of the `MultiBufferSource$BufferSource`
+- - `MAX_GUI_Z`, `MIN_GUI_Z` are removed
+- - `flush` is removed
+- - All methods no longer take in a `RenderType`, `VertexConsumer`, or `Function<ResourceLocation, RenderType>`, instead specifying a `RenderPipeline` and a `TextureSetup` depending on the call
+- - `drawString`, `drawStringWithBackdrop` no longer returns anything
+- - `renderItem(ItemStack, int, int, int, int)` is removed
+- - `drawSpecial` is removed, replaced by individual `submit*RenderState` depending on the special case
+- - `render*Tooltip` -> `set*TooltipForNextFrame`, does not directly add to the render state, instead waiting for `renderDeferredTooltip` to be called when not present or overridden
+- - `LayeredDraw` class is removed
+- - `AbstractWidget#getTooltip` is removed
+- - `MultilineTextField#NO_CHARACTER_LIMIT` -> `NO_LIMIT`
+- - `SplashRenderer#render` now takes in a float for the R color instead of an int
+- - `WidgetTooltipHolder#refreshTooltipForNextRenderPass` now takes in the `GuiGraphics` and the XY position
+- - `net.minecraft.client.gui.components.spectator.SpectatorGui#renderTooltip` -> `renderAction`
+- - `ToastManager` now takes in the `Options`
+- - `net.minecraft.client.gui.font.GlyphRenderTypes` now takes in a `RenderPipeline` for the gui rendering
+- - `net.minecraft.client.gui.font.glyphs.BakedGlyph` now takes in a `GpuTextureView`
+- - `renderChar`, `renderEffect` now takes in an additional boolean that sets the Z offset to `0` when true and `0.001` when false
+- - `transformAxisAligned` now takes in a `Matrix3x2f` instead of a `Matrix4f`
+- - `yesButton`, `noButton` -> `yesButtonComponent`, `noButtonComponent`
+- - `onDisconnect` -> `disconnectFromWorld`, now public and static; not one-to-one
+- - `CUBE_MAP` -> `net.minecraft.client.renderer.GameRenderer#cubeMap`
+- - `PANORAMA` -> `net.minecraft.client.renderer.GameRenderer#panorama`
+- - `renderBlurredBackground` now takes in the `GuiGraphics`
+- - `*TooltipForNextRenderPass` methods are either removed or moved to `GuiGraphics`
+- - `SLOT_ITEM_BLIT_OFFSET` is removed
+- - `AbstractSignEditScreen#offsetSign` -> `getSignYOffset`, not one-to-one
+- - `closeScreen` -> `closeContainerOnServer`, not one-to-one
+- - `InventoryScreen#renderEntityInInventory` no longer takes in the XY offset, instead taking in 4 `int`s to represent the region to render to
+- - `ItemCombinerScreen#renderFg` is removed
+- - `ClientTooltipComponent#renderText` no longer takes in the pose and buffer, instead the `GuiGraphics` to submit the text for rendering
+- - `TooltipRenderUtil#renderTooltipBackground` no longer takes in a Z offset
+- - `net.minecraft.client.gui.screens.multiplayer.ServerLinksScreen` class is removed, replaced by dialog modal
+- - `net.minecraft.client.gui.screens.worldselection.ExperimentsScreen$ScrollArea` class is removed, replaced by the `ScrollableLayout`
+- - `GameRenderer` no longer takes in a `ResourceManager`
+- - `ITEM_ACTIVATION_ANIMATION_LENGTH` is removed
+- - `setRenderHand` is removed
+- - `renderZoomed` is removed
+- - `LightTexture#getTexture` -> `getTextureView`, not one-to-one
+- - `GUI_OVERLAY`, `GUI_GHOST_RECIPE_OVERLAY`, `GUI_TEXTURED_OVERLAY` are removed
+- - `$Builder#add` no longer takes in whether the shard should be blurred
+- - `$TextureStateShard` no longer takes in a `TriState` to set the blur mode
+- - `debugLine` is removed
+- - `gui`, `guiOverlay`, `guiTexturedOverlay`, `guiOpaqueTexturedBackground`, `guiNauseaOverlay`, `guiTextHighlight`, `guiGhostRecipeOverlay`, `guiTextured` are removed
+- - `vignette` is removed
+- - `crosshair` is removed
+- - `mojangLogo` is removed
+- - `SkullBlockRenderer#getRenderType(SkullBlock$Type, ResolvableProfile, ResourceLocation)` -> `getSkullRenderType`, `getPlayerSkinRenderType`; not one-to-one
+- - `GUI_SLOT_CENTER_X`, `GUI_SLOT_CENTER_Y`, `ITEM_DECORATION_BLIT_OFFSET` are removed
+- - `COMPASS_*` -> `SPECIAL_*`
+- - `SkullSpecialRenderer` now implements `NoDataSpecialModelRenderer`, no longer taking in the model or texture override, instead just the `RenderType` to use
+- // Remove the waypoint once it no longer exists
+- - `net.minecraft.server.ServerScoreboard$Method` enum is removed
+- // Dynamic values from the codebase are no longer supported
+- The scissoring state has been removed from the generic pipeline code, now only accessible through the OpenGL implementation. Generic region handling has been delegated to `CommandEncoder#clearColorAndDepthTextures`. Note that this does not affect the existing `ScreenRectangle` system that handles the blit facing scissoring.
+- - `BufferType` enum is removed
+- - `BufferUsage` enum is removed
+
+## Primer 1.21.7
+
+### Headings
+- # Minecraft 1.21.6 -> 1.21.7 Mod Migration Primer
+- ## Pack Changes
+- ## Minor Migrations
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- - `com.mojang.blaze3d.pipeline.RenderPipeline$Builder#withColorLogic` is now deprecated
+- - `net.minecraft.client.gui.render.state.GuiItemRenderState` now takes in a `TrackingItemRenderState` instead of a `ItemStackRenderState`
+- - `net.minecraft.client.renderer.item.ItemStackRenderState#getModelIdentity` -> `TrackingItemRenderState#getModelIdentity`
+
+## Primer 1.21.8
+
+### Headings
+- # Minecraft 1.21.7 -> 1.21.8 Mod Migration Primer
+- ## Pack Changes
+- ## Minor Migrations
+- ### List of Additions
+
+### Rename / removal signals
+- (few explicit rename lines in first pass)
+
+## Primer 1.21.9
+
+### Headings
+- # Minecraft 1.21.8 -> 1.21.9 Mod Migration Primer
+- ## Pack Changes
+- ## The Debugging Overhaul
+- ### Debug Renderers
+- ## Debug Screens
+- ## Feature Submissions: The Movie
+- ### Submission and Rendering
+- ### Entity Models
+- ### Entity Renderer
+- ### Block Entity Renderer
+- ### Special Item Models
+- ### Particles
+- ### Atlas Handler Consolidation
+- ## The Font Glyph Pipeline
+- ### Object Info
+- ### Component Contents
+- ### Data Sources
+- ## The JSON-RPC Management Servers
+- ### Schemas
+- ### `IncomingRpcMethod`
+- ### `OutgoingRpcMethod`
+- ## Input Handling Consolidation
+- ### Key Mapping Categories
+- ### Double-Click Expansion
+- ## `Level#isClientSide` now private
+- ## Minor Migrations
+- ### Item Owner
+- ### Container User
+- ### Name And Id
+- ### Typed Entity Data
+- ### Reload Listener Shared State
+- ### Ticket Flags
+- ### Respawn Data
+- ### The 'On Shelf' Transform
+- ### Client Asset Split
+- ### Cursor Types
+- ### New Tags
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- - `USE_DEBUG_FEATURES` -> `DEBUG_ENABLED`
+- - `DEBUG_RENDER` is removed
+- - `DEBUG_WORLDGENATTEMPT` is removed
+- - `debugGenerateStripedTerrainWithoutNoise` is removed
+- - `DEBUG_RESOURCE_GENERATION_OVERRIDE` is removed
+- - `FAKE_MS_LATENCY` -> `DEBUG_FAKE_LATENCY_MS`
+- - `FAKE_MS_JITTER` -> `DEBUG_FAKE_JITTER_MS`
+- - `fpsString`, `sectionPath`, `sectionVisibility` are removed
+- - `debugRenderer` -> `LevelRenderer#debugRenderer`
+- - `shouldRenderDebugCrosshair` is removed
+- - `drawGameInformation`, `drawSystemInformation` are removed
+- - `getGameInformation`, `getSystemInformation` are removed
+- - `toggleOverlay` is removed
+- - `switchRenderChunkborder` -> `DebugScreenEntries#CHUNK_BORDERS`, not one-to-one
+- - `toggleRenderOctree` -> `DebugScreenEntries#CHUNK_SECTION_OCTREE`, not one-to-one
+- - `DebugSampleSubscriber` -> `ClientDebugSubscriber`, not one-to-one
+- - `BeeDebugRenderer#addOrUpdateHiveInfo`, `addOrUpdateBeeInfo`, `removeBeeInfo` are removed
+- - `addPoi`, `removePoi`, `$PoiInfo` are removed
+- - `setFreeTicketCount` is removed
+- - `addOrUpdateBrainDump`, `removeBrainDump` are removed
+- - `render` now takes in a `DebugValueAccess`
+- - `clear`, `add` are removed
+- - `DebugRenderer` no longer takes in the `Minecraft` instance
+- - All field renderers have been removed from public access, instead being store in on of the `*Renderers` lists
+- - `worldGenAttemptRenderer` is removed
+- - `render` now takes in a `DebugValueAccess` and `Frustum`
+- - `clear` is removed
+- - `GameEventListenerRenderer` no longer takes in the `Minecraft` instance
+- - `trackGameEvent`, `trackListener` are removed
+- - `GameTestDebugRenderer` -> `GameTestBlockHighlightRenderer`, not one-to-one
+- - `addMarker` -> `highlightPos`, not one-to-one
+- - `GoalSelectorDebugRenderer#addGoalSelector`, `removeGoalSelector` are removed
+- - `NeighborsUpdateRenderer` no longer takes in the `Minecraft` instance
+- - `addUpdate` is removed
+- - `PathfindingRenderer#addPath` is removed
+- - `RaidDebugRenderer#setRaidCenters` is removed
+- - `RedstoneWireOrientationsRenderer` no longer takes in the `Minecraft` instance
+- - `addWireOrientation` is removed
+- - `StructureRenderer` no longer takes in the `Minecraft` instance
+- - `addBoundingBox` is removed
+- - `VillagerSectionsDebugRenderer#setVillageSection`, `setNotVillageSection` are removed
+- - `WorldGenAttemptRenderer` class is removed
+- - `GameTestRunner#clearMarkers` is removed
+- - All classes have been moved to `net.minecraft.util.debug`
+- - They are no longer payloads, instead just records containing the object info and an associated stream codec
+- - If the payload class had an associated object inner class, then that class was moved and the payload class removed
+- - `DebugPackets` class is removed
+- - `ServerboundDebugSampleSubscriptionPacket` -> `ServerboundDebugSubscriptionRequestPacket`, not one-to-one
+- - `ServerGamePacketListener#handleDebugSampleSubscription` -> `handleDebugSubscriptionRequest`, not one-to-one
+- - `subscribeToDebugSample` is removed
+- - `getChunks` is removed
+- - `DebugSampleSubscriptionTracker` class is removed
+- - `RemoteDebugSampleType` now takes in a `DebugSubscription`
+- - `RemoteSampleLogger` now takes in `ServerDebugSubscribers` instead of `DebugSampleSubscriptionTracker`
+- - `Mob#sendDebugPackets` is removed
+- - `PoiManager#getFreeTickets` -> `getDebugPoiInfo`, not one-to-one
+- So, how does this affect entities? Let's start with the root `Model` that makes up all entity models. `Model` now has a generic which is used to pass in the state of the backing object to `setupAnim`, which has also been moved to `Model`. This means that the base model class is rarely passed around, instead opting for some subtype, like `Model$Simple` for signs. Given that most `EntityModel`s already require a generic of `EntityRenderState`, this does not affect anything.
+- The main change comes from how model part visibility work, such as armors and capes. Every single individual part (e.g. helmet, chestplate) now has their own separate model, meaning that the general part visibility system has been completely removed. You can still provide visibility through the mutable model part in `setupAnim`, but the general movement is to simply have parts that should be separate models as separate models.
+- With the change to submission, the `EntityRenderer` and its associated `RenderLayer`s have also changed. Basically, you can assume almost every method that has the word `render` has been changed to `submit`, and `MultiBufferSource` and light coordinates integer have generally been replaced by `SubmitNodeCollector` and the associated entity render state.
+- The new `submit` method that replaces `render` in `EntityRenderer` now takes in the render state of the entity, the `PoseStack`, the `SubmitNodeCollector`, and the `CameraRenderState`. When submitting any element, the location in 3D space is taken by getting the last pose on the `PoseStack` and storing that for future use.
+
+## Primer 1.21.10
+
+### Headings
+- # Minecraft 1.21.9 -> 1.21.10 Mod Migration Primer
+- ## Pack Changes
+- ## Minor Migrations
+- ### List of Additions
+- ### List of Changes
+
+### Rename / removal signals
+- `net.minecraft.world.level.block.state.BlockBehaviour#entityInside` now takes in a `boolean` indicating whether the entity is intersecting or inside the block
+
+## Primer 1.21.11
+
+### Headings
+- # Minecraft 1.21.10 -> 1.21.11 Mod Migration Primer
+- ## Pack Changes
+- ## The Rename Shuffle
+- ### `ResourceLocation` to `Identifier`
+- ### The `util` Package
+- ### `critereon` to `criterion`
+- ### Entity and Object Subpackages
+- ## Oh Hey, Another Rendering Rewrite
+- ### The Separation of Samplers
+- ### The `RenderType` Shuffle
+- ### Mipmap Strategy Metadata
+- ### Block and Terrain Split
+- ### Item Atlases
+- ## Gizmos
+- ### What is a Gizmo?
+- ### Putting it Together
+- ## Permission Overhaul
+- ### Permissions
+- ### Permission Sets
+- ### Permission Checks
+- ## New Data Components
+- ### Use Effects
+- ### Damage Type
+- ### Swing Animation
+- ### Minimum Attack Charge
+- ### Attack Range
+- ### Piercing Weapon
+- ### Kinetic Weapon
+- ## The Timeline of Environment Attributes
+- ### Custom Environment Attributes
+- ### Custom Attribute Types
+- ### Timelines
+- ## The Game Rule Shuffle
+- ### Existing Game Rules
+- ### Creating a Game Rule
+- ## Minor Migrations
+- ### Usage Annotations
+- ### Text Collectors
+- ### Shared Text Areas Debugger
+- ### JSpecify Annotations
+- ### Slot Sources
+- ### Zombie Nautilus Variant
+- ### `OptionEnum` Removal
+- ### Specific Logic Changes
+- ### Tag Changes
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- Most utility classes have been moved to `net.minecraft.util`. These will need to be reimported.
+- `net.minecraft.advancements.critereon` has been renamed to `net.minecraft.advancements.criterion`. These will need to be reimported.
+- - `BlockUtil` -> `.util.BlockUtil`
+- - `FileUtil` -> `.util.FileUtil`
+- - `ResourceLocationException` -> `IdentifierException`
+- - `Util` -> `.util.Util`
+- - `net.minecraft.advancements.critereon` -> `.advancements.criterion`
+- - `net.minecraft.client.gui.screens.inventory.JigsawBlockEditScreen#isValidResourceLocation` -> `isValidIdentifier`
+- - `AbstractBoatModel` -> `.object.boat.AbstractBoatModel`
+- - `AbstractEquineModel` -> `.animal.equine.AbstractEquineModel`
+- - `AbstractPiglinModel` -> `.monster.piglin.AbstractPiglinModel`
+- - `AbstractZombieModel` -> `.monster.zombie.AbstractZombieModel`
+- - `AllayModel` -> `.animal.allay.AllayModel`
+- - `ArmadilloModel` -> `.animal.armadillo.ArmadilloModel`
+- - `ArmorStandArmorModel` -> `.object.armorstand.ArmorStandArmorModel`
+- - `ArmorStandModel` -> `.object.armorstand.ArmorStandModel`
+- - `ArrowModel` -> `.object.projectile.ArrowModel`
+- - `AxolotlModel` -> `.animal.axolotl.AxolotlModel`
+- - `BannerFlagModel` -> `.object.banner.BannerFlagModel`
+- - `BannerModel` -> `.object.banner.BannerModel`
+- - `BatModel` -> `.ambient.BatModel`
+- - `BeeModel` -> `.animal.bee.BeeModel`
+- - `BeeStingerModel` -> `.animal.bee.BeeStingerModel`
+- - `BellModel` -> `.object.bell.BellModel`
+- - `BlazeModel` -> `.monster.blaze.BlazeModel`
+- - `BoatModel` -> `.object.boat.BoatModel`
+- - `BoggedModel` -> `.monster.skeleton.BoggedModel`
+- - `BookModel` -> `.object.book.BookModel`
+- - `BreezeModel` -> `.monster.breeze.BreezeModel`
+- - `CamelModel` -> `.animal.camel.CamelModel`
+- - `CamelSaddleModel` -> `.animal.camel.CamelSaddleModel`
+- - `CatModel` -> `.animal.feline.CatModel`
+- - `ChestModel` -> `.object.chest.ChestModel`
+- - `ChickenModel` -> `.animal.chicken.ChickenModel`
+- - `CodModel` -> `.animal.fish.CodModel`
+- - `ColdChickenModel` -> `.animal.chicken.ColdChickenModel`
+- - `ColdCowModel` -> `.animal.cow.ColdCowModel`
+- - `ColdPigModel` -> `.animal.pig.ColdPigModel`
+- - `CopperGolemModel` -> `.animal.golem.CopperGolemModel`
+- - `CopperGolemStatueModel` -> `.object.statue.CopperGolemStatueModel`
+- - `CowModel` -> `.animal.cow.CowModel`
+- - `CreakingModel` -> `.monster.creaking.CreakingModel`
+- - `CreeperModel` -> `.monster.creeper.CreeperModel`
+- - `DolphinModel` -> `.animal.dolphin.DolphinModel`
+- - `DonkeyModel` -> `.animal.equine.DonkeyModel`
+- - `DrownedModel` -> `.monster.zombie.DrownedModel`
+- - `ElytraModel` -> `.object.equipment.ElytraModel`
+- - `EndCrystalModel` -> `.object.crystal.EndCrystalModel`
+- - `EndermanModel` -> `.monster.enderman.EndermanModel`
+- - `EndermiteModel` -> `.monster.endermite.EndermiteModel`
+- - `EquineSaddleModel` -> `.animal.equine.EquineSaddleModel`
+- - `EvokerFangsModel` -> `.effects.EvokerFangsModel`
+- - `FelineModel` -> `.animal.feline.FelineModel`
+- - `FoxModel` -> `.animal.fox.FoxModel`
+- - `FrogModel` -> `.animal.frog.FrogModel`
+- - `GhastModel` -> `.monster.ghast.GhastModel`
+- - `GiantZombieModel` -> `.monster.zombie.GiantZombieModel`
+- - `GoatModel` -> `.animal.goat.GoatModel`
+- - `GuardianModel` -> `.monster.guardian.GuardianModel`
+- - `GuardianParticleModel` -> `.monster.guardian.GuardianParticleModel`
+- TABLE: | `mean`          | The default that averages the color between four pixels for the current mipmap level.                                          |
+- TABLE: | `cutout`        | `mean`, except that all levels are generated from the original texture, with alpha snapped to 0 or 1 using a threshold of 0.2. |
+- TABLE: | `strict_cutout` | `cutout`, except that it sets the alpha snaps using a threshold of `0.6`.                                                      |
+- TABLE: | `dark_cutout`   | `mean`, except that the surrounding pixels are only included in the average if their alpha is not `0`.                         |
+- TABLE: | `setAlwaysOnTop`   | Clears the depth texture before rendering.                                      |
+- TABLE: | `persistForMillis` | Keeps the gizmo on screen for the specified amount of time before disappearing. |
+- TABLE: | `fadeOut`          | Fades the disappearing when persisted for a certain amount of time.             |
+
+## Primer 26.1
+
+### Headings
+- # Minecraft 1.21.11 -> 26.1 Mod Migration Primer
+- ## Pack Changes
+- ## Java 25 and Deobfuscation
+- ## Loot Type Unrolling
+- ## Validation Overhaul
+- ## Datapack Villager Trades
+- ### Understanding the Trade Format
+- ### The Trades of a Trader
+- ### Item Listing Conversions
+- ## `Level#random` field now protected
+- ## Data Component Initializers
+- ### Items
+- ### Recipes
+- ## Item Instances and Stack Templates
+- ### Recipe Builders
+- ## Serializer Records and Recipe Info
+- ## Dye Component
+- ### Entities and Signs
+- ### Dye Recipes
+- ## World Clocks and Time Markers
+- ### Marking Timelines
+- ## Splitting the Primary Level Data into Saved Data
+- ### Saved Data Changes
+- ### Additional Saved Data
+- ## Even More Rendering Changes
+- ### Materials and Dynamic Layer Selection
+- ### Materials and Sprites
+- ### Quad Particle Layers
+- ### Block Models
+- ### Block Tint Sources
+- ### Removing the Old Block and Item Renderers
+- ### Object Definition Transformations
+- ### Quad Instance
+- ### Gui Extractor
+- ### Fluid Models
+- ### Name Tag Offsets
+- ### Tint Getter
+- ### Pipeline Depth and Color
+- ### Blaze3d Backends
+- ### Solid and Translucent Features
+- ### Camera State
+- ## Minor Migrations
+- ### Plantable Tags
+- ### Container Screen Changes
+- ### New Tag Providers
+- ### Test Environment State Tracking
+- ### Typed Instance
+- ### Entity Textures and Adult/Baby Models
+- ### The Removal of interactAt
+- ### ChunkPos, now a record
+- ### No More Tripwire Pipelines
+- ### Activities and Brains
+- ### File Fixer Upper
+- ### Chat Permissions
+- ### More Entity Sound Variant Registries
+- ### Audio Changes
+- ### Input Message Editor Support
+- ### Cauldron Interaction Dispatchers
+- ### Rule-Based Block State Providers
+- ### Fluid Logic Reorganization
+- ### Removal of Random Patch Feature
+- ### Specific Logic Changes
+- ### Data Component Additions
+- ### Environment Attribute Additions
+- ### Tag Changes
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- Loot pool entries, item functions, item conditions, nbt providers, number providers, score providers, int providers, and float providers no longer use a wrapping object type to act as the registered instance. Now, the registries directly take in the `MapCodec` used for the serialization and deserialization process. As such, the `*Type` classes or records that held the codec have been removed. Additionally, `getType` is now renamed to `codec`, taking in the registered `MapCodec`.
+- - `CODEC` -> `FloatProviders#CODEC`
+- - `codec` -> `FloatProviders#codec`
+- - `getType` ->  `codec`, not one-to-one
+- - `getMinValue` -> `min`
+- - `getMaxValue` -> `max`
+- - `FloatProviderType` interface is removed
+- - Singleton fields have all been removed, use map codecs in each class instead
+- - `codec` -> `FloatProvider#codec`
+- - `CODEC` -> `IntProviders#CODEC`
+- - `NON_NEGATIVE_CODEC` -> `IntProviders#NON_NEGATIVE_CODEC`
+- - `POSITIVE_CODEC` -> `IntProviders#POSITIVE_CODEC`
+- - `codec` -> `IntProviders#codec`
+- - `validateCodec` -> `IntProviders#validateCodec`
+- - `getMinValue` -> `minInclusive`
+- - `getMaxValue` -> `maxInclusive`
+- - `getType` ->  `codec`, not one-to-one
+- - `IntProviderType` interface is removed
+- - Singleton fields have all been removed, use map codecs in each class instead
+- - `codec` -> `IntProvider#codec`
+- - `LootPoolEntries` singleton fields have all been removed
+- - `LootPoolEntryContainer#getType` -> `codec`, not one-to-one
+- - `LootPoolEntryType` record is removed
+- - `LootItemFunction#getType` -> `codec`, not one-to-one
+- - `LootItemFunctions` singleton fields have all been removed
+- - `LootItemFunctionType` record is removed
+- - `LootItemCondition#getType` -> `codec`, not one-to-one
+- - `LootItemConditions` singleton fields have all been removed
+- - `LootItemConditionType` record is removed
+- - `LootNbtProviderType` record is removed
+- - `getType` -> `codec`, not one-to-one
+- - `NbtProviders` singleton fields have all been removed
+- - `LootItemConditionType` record is removed
+- - `LootNumberProviderType` record is removed
+- - `NumberProvider#getType` -> `codec`, not one-to-one
+- - `NumberProviders` singleton fields have all been removed
+- - `LootScoreProviderType` record is removed
+- - `getType` -> `codec`, not one-to-one
+- - `ScoreProviders` singleton fields have all been removed
+- - `net.minecraft.advancements.CriterionTriggerInstance#validate` now takes in a `ValidationContextSource` instead of a `CriterionValidator`
+- - `CriterionValidator` -> `ValidationContextSource` and `Validatable`
+- - `conditionCodec` is replaced by calling `validate` after load
+- - `getReferencedContextParams` replaced by `validate`
+- - The constructor now takes in a `$ContextGetter` instead of a `$Validator`
+- - `runValidation` now takes in the `ValidationContextSource` instead of a `ValidationContext`
+- - `createSimpleValidator`, `createLootTableValidator`, `$Validator` replaced by `Validatable`
+- - `setContextKeySet` is removed
+- - `AbstractVillager#addOffersFromItemListings` -> `addOffersFromTradeSet`, taking in a key for the trade set rather than the `$ItemListing`s and number of offers; not one-to-one
+- - `VillagerProfession` now takes in a map of trader level to `TradeSet`
+- - `$DyedArmorForEmeralds` -> `VillagerTrades#dyedItem`, `addRandomDye`; not one-to-one
+- - `$EmeraldForItems` -> `VillagerTrade`, not one-to-one
+- - `$EmeraldsForVillagerTypeItem` -> `VillagerTrades#registerBoatTrades`, see usage, not one-to-one
+- - `$EnchantBookForEmeralds` -> `VillagerTrades#enchantedBook`, not one-to-one
+- - `$EnchantedItemForEmeralds` -> `VillagerTrades#enchantedItem`, not one-to-one
+- - `$ItemListing` -> `VillagerTrade`
+- - `$ItemsAndEmeraldsToItems` -> `VillagerTrade` with `additionalWants`
+- - `$ItemsForEmeralds` -> `VillagerTrade`, not one-to-one
+- - `$SuspiciousStewForEmerald` -> `VillagerTrade` with `SetStewEffectFunction`
+- - `$TippedArrowForItemsAndEmeralds` -> `VillagerTrade` with `SetRandomPotionFunction`
+- - `$TreasureMapForEmeralds` -> `VillagerTrades$VillagerExplorerMapEntry`, see usage, not one-to-one
+
+## Primer 26.2
+
+### Headings
+- # Minecraft 26.1.x -> 26.2 Mod Migration Primer
+- ## Pack Changes
+- ## Too Many Rendering Changes
+- ### Vulkan
+- ### Blend Factors
+- ### GPU Formats
+- ### Rewriting Vertex Formats
+- ### Multiple Color Target States
+- ### Bind Group Layouts
+- ### Render Areas
+- ### Replacing `ChatFormatting` in Components
+- ### Gui Reorganization
+- ### Font Preparations
+- ### Submitting Gizmos
+- ### Feature Rendering: The Takeover
+- ### Dispatching Picture-In-Picture
+- ### Shape Outlines Feature
+- ## Object Collections
+- ## Advancements and Entity Sub Predicates
+- ## More Resource Keys and Separating Registry Objects
+- ### Tags Provider Changes
+- ## Minor Migrations
+- ### Sulfur Cube Archetypes
+- ### Shears Breaking Speed
+- ### Structure Processor Unrolling
+- ### Game Test Entity Builders
+- ### Xbox Friend List
+- ### Data Component Additions
+- ### Entity Attribute Additions
+- ### Tag Changes
+- ### List of Additions
+- ### List of Changes
+- ### List of Removals
+
+### Rename / removal signals
+- `TextureFormat` and the buffer formats of `VertexFormatElement` have been replaced by the `GpuFormat` enum. The names of each enum entry can be broken down into three components: a channel with their bit size, an underscore, and finally the data type. Here are some examples:
+- `VertexFormat` along with `VertexFormatElement` has been partially rewritten into a more dynamic framework. There is no longer a set of existing `VertexFormatElement`s. Instead, the elements are constructed when building the `VertexFormat` by adding attributes via `$Builder#addAttribute`. A `VertexFormat` can define at most sixteen elements or attributes, each providing at least the name and `GpuFormat`.
+- `Font` draw methods have been completely removed, and instead need to be prepared and handled manually. This should only be done if your text cannot be submitted as a feature via `OrderedSubmitNodeCollector#submitText`.
+- For users of the system, `FeatureRenderDispatcher` now takes in a `SubmitNodeStorage` as part of its render methods. This allows for a specific subset of features to be rendered depending on user implementation rather than only at vanilla entrypoints:
+- If your `SubmitNode` contains a `RenderType`, then you can extend `RenderTypeFeatureRenderer` instead. `RenderTypeFeatureRenderer` functions similarly to the now removed `MultiBufferSource`, where within `buildGroup`, the `VertexConsumer` can be obtained from the render type via `getVertexBuffer`, which can then be written to.
+- Direct access to the `MultiBufferSource$BufferSource` has been removed from the `PictureInPictureRenderer`. Instead `prepare` now takes in the `FeatureRenderDispatcher` to render the elements to a texture, while `renderToTexture` takes in the `SubmitNodeCollector`.
+- // The constructor is no longer required as it doesn't take in the `MultiBufferSource$BufferSource`.
+- - `rendertype_text` -> `text`
+- - `rendertype_text_background` -> `text_background`
+- - `rendertype_text_background_see_through` -> `text_background` with `IS_SEE_THROUGH` shader define
+- - `rendertype_text_intensity` -> `text` with `IS_GRAYSCALE` shader define
+- - `rendertype_text_intensity_see_through` -> `text` with `IS_GRAYSCALE` and `IS_SEE_THROUGH` shader defines
+- - `rendertype_text_see_through` -> `text` with `IS_SEE_THROUGH` shader define
+- - `GraphicsWorkarounds` -> `GlHeuristics`, `HintsAndWorkarounds`; not one-to-one
+- - `alwaysCreateFreshImmediateBuffer` is removed
+- - `$MappedView` -> `GpuBufferSlice$MappedView`, not one-to-one
+- - `GpuFence#awaitCompletion` now takes in a nanosecond timeout instead of a millisecond timeout
+- - `mapBuffer` replaced by `GpuBuffer#map`, `GpuBufferSlice#map`; not one-to-one
+- - `createBuffer` no longer takes in the supplied `String` label
+- - `GlBuffer` is now abstract, taking in a `boolean` for whether a persistent buffer can be mapped rather than the persistent `ByteBuffer`, and no longer taking in the supplied `String` label
+- - `MEMORY_POOl` -> `MEMORY_POOL`
+- - `closed` -> `$Direct#closed`, now `private` from `protected`
+- - `persistentBuffer` replaced by `mappedBuffer`, not one-to-one
+- - `$GlMappedView` replaced by `GpuBufferSlice$MappedView`, not one-to-one
+- - `finishRenderPass` -> `CommandEncoder#submitRenderPass`
+- - `executeDraw` now takes takes in an `int` for the first instance used for fetching vertex attributes
+- - `presentTexture` now takes in the swapchain width and height `int`s
+- - `GL_DEPTH_TEXTURE_MODE`, `GL_ALPHA_BIAS` are removed
+- - `toGl(DestFactor)`, `toGl(SourceFactor)` -> `toGl(BlendFactor)`
+- - `toGl(NativeImage$Format)` is removed
+- - `GlDebugLabel#applyLabel` now takes in the supplied `String` label
+- - `setupUniforms` -> `setupBindGroupLayouts`, now taking a list of `BindGroupLayout`s instead of uniforms and samplers directly
+- - `link` now takes in an array of `VertexFormat`s rather than a single one
+- - `GlRenderPass` now takes in the default `ScissorState` and how many color textures are used.
+- - `MAX_VERTEX_BUFFERS` -> `RenderPass#MAX_VERTEX_BUFFERS`, not one-to-one
+- - The constructor now takes in the `GpuFormat` instead of the `TextureFormat`, and the `FrameBufferCache`
+- - `getFbo` replaced by `FrameBufferCache#getFbo`
+- - The constructor now takes in the `FrameBufferCache`
+- - `getFbo` replaced by `FrameBufferCache#getFbo`
+- - `GlTimerQuery` replaced by `GlQueryPool`
+- - `Uniform$Utb` now takes in the `GpuFormat` instead of the `TextureFormat`
+- - `VertexArrayCache#bindVertexArray` now takes in arrays for the `VertexFormat` bindings and `GpuBufferSlice` buffers along with the last bound `$VertexArray`, returning the newly bound `$VertexArray`
+- - `BlendFunction` now takes in `BlendEquation`s, `BlendFactor`s, or `BlendOp`s instead of `SourceFactor`s and `DestFactor`s
+- - `ColorTargetState` now takes in the `GpuFormat`
+- - `RenderPipeline` now takes in a list of `BindGroupLayout`s instead of uniforms and samplers directly, and an array of `ColorTargetState`s and `VertexFormat`s instead of just one
+- - `getSamplers`, `getUniforms` -> `getBindGroupLayouts`
+- - `getVertexFormat` replaced by `getVertexFormatBinding`, taking in the bound index
+- - `getVertexFormatMode` -> `getPrimitiveTopology`
+- - `withUniform`, `withSampler` -> `withBindGroupLayout`
+- - `withColorTargetState` now takes in the `int` index to bind
+- - `withVertexFormat` -> `withVertexBinding`, now taking in the `int` index to bind, and no longer taking in the `VertexFormat$Mode`
+- - `samplers`, `uniforms` -> `bindGroupLayouts`, not one-to-one
+- - `colorTargetState` -> `colorTargetStates`, now a nullable array of `ColorTargetState`s instead of an optional single state
+- - `vertexFormat` -> `vertexFormatPerBuffer`, now a nullable array of `VertexFormat`s instead of an optional single state
+- - `$UniformDescription` -> `BindGroupLayout$UniformDescription`
+- - `RenderTarget` now takes in the `GpuFormat`
+- - `blitToScreen` is removed
+- - Usage replaced by `GpuSurface#blitFromTexture`
+- - `blitAndBlendToTexture` now takes in a `GpuTextureView` for the output depth texture
+- - `TextureTarget` now takes in the `GpuFormat`
+

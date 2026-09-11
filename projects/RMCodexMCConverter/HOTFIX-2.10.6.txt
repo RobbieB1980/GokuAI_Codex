@@ -1,0 +1,5 @@
+Tools hotfix 2.10.6 (GUI version.txt may still read 2.10.5 until Setup rebuild).
+
+Custom GameRules: DeferredRegister(Registries.GAME_RULE) + new GameRule<>. Static GameRules.registerBoolean crashes constructMods (gecko_kings spawnHellishXenomorphs).
+
+Recipe ingredients: {"item":"id"} / {"tag":"id"} → "id" / "#id" (Invoke-Minecraft262RecipeIngredientPass). 26.2 Ingredient.CODEC rejects legacy objects; MCreator 26.1.x emits strings.

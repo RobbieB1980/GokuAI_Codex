@@ -1,0 +1,1 @@
+Tools/GUI release 2.10.9: dual-version deps, Fix-in-Grok PromptFile pointer, CASE-006 Easy Mob Farm remaps, knowledge-backup/262r on GitHub.
