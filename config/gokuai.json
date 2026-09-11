@@ -1,0 +1,47 @@
+{
+  "schema": 2,
+  "asset_root": "C:\\gokuai",
+  "runtime": "C:\\gokuai\\runtime\\llama.cpp\\llama-server.exe",
+  "knowledge": {
+    "root": "C:\\gokuai\\Data",
+    "active_index_pointer": "C:\\gokuai\\DataIndex\\minecraft-knowledge\\_ACTIVE_DB.txt",
+    "hardened_fixes": "C:\\gokuai\\Data\\Solved_Problems",
+    "order": ["hardened_fixes", "compact_version_primers", "exact_version_sources", "broader_index"]
+  },
+  "model": {
+    "alias": "goku-local",
+    "model": "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
+    "context_size": 32768,
+    "batch_size": 2048,
+    "ubatch_size": 1024
+  },
+  "modes": {
+    "fast": {"model_alias": "goku-local", "max_completion_tokens": 1024},
+    "code": {"model_alias": "goku-local", "max_completion_tokens": 8192}
+  },
+  "inference": {
+    "gpu_layers": "all",
+    "cpu_moe_layers": 0,
+    "flash_attention": true,
+    "cache_type_k": "q8_0",
+    "cache_type_v": "q8_0",
+    "parallel": 1,
+    "reasoning": "on",
+    "reasoning_effort": "medium",
+    "reasoning_budget": 384,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0,
+    "repeat_penalty": 1.0,
+    "speculative_decoding": "ngram-mod",
+    "ngram_match": 24,
+    "ngram_min": 48,
+    "ngram_max": 64
+  },
+  "escalation": {
+    "default": "gpt-5.6-sol-medium",
+    "difficult": "gpt-5.6-sol-high",
+    "high_when": ["repeated_local_failure", "conflicting_evidence", "multi_version_architecture", "subtle_runtime_bug", "medium_uncertain"]
+  }
+}

@@ -1,0 +1,47 @@
+﻿{
+    "choices":  [
+                    {
+                        "finish_reason":  "tool_calls",
+                        "index":  0,
+                        "message":  {
+                                        "role":  "assistant",
+                                        "content":  "",
+                                        "reasoning_content":  "The user wants me to use the lookup_fix function with the signature \"REG-001\". Let me call that function.\n",
+                                        "tool_calls":  [
+                                                           {
+                                                               "type":  "function",
+                                                               "function":  {
+                                                                                "name":  "lookup_fix",
+                                                                                "arguments":  "{\"signature\":\"REG-001\"}"
+                                                                            },
+                                                               "id":  "YvP895b7jn98TEqTrckBWZfCHAf7Uw8x"
+                                                           }
+                                                       ]
+                                    }
+                    }
+                ],
+    "created":  1789123152,
+    "model":  "goku-code",
+    "system_fingerprint":  "b10809-5266f24da",
+    "object":  "chat.completion",
+    "usage":  {
+                  "completion_tokens":  60,
+                  "prompt_tokens":  277,
+                  "total_tokens":  337,
+                  "prompt_tokens_details":  {
+                                                "cached_tokens":  0
+                                            }
+              },
+    "id":  "chatcmpl-FKU1nJyNI9EVhVL3nj2w9GFa4y2M4I3H",
+    "timings":  {
+                    "cache_n":  0,
+                    "prompt_n":  277,
+                    "prompt_ms":  224.318,
+                    "prompt_per_token_ms":  0.8098122743682311,
+                    "prompt_per_second":  1234.8540910671456,
+                    "predicted_n":  60,
+                    "predicted_ms":  437.871,
+                    "predicted_per_token_ms":  7.421542372881356,
+                    "predicted_per_second":  134.7428808941446
+                }
+}

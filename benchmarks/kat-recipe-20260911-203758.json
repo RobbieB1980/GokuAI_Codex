@@ -1,0 +1,47 @@
+﻿[
+    {
+        "profile":  "kat-recipe",
+        "model":  "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
+        "case":  "code-repair",
+        "status":  "ok",
+        "load_seconds":  14.62,
+        "vram_mib":  16748,
+        "elapsed_seconds":  1.628,
+        "completion_tokens":  219,
+        "tokens_per_second":  134.55,
+        "finish_reason":  "stop",
+        "answer":  "```java\npublic static int sum(int[] a) {\n    if (a == null) return 0;\n    int s = 0;\n    for (int i = 0; i \u003c a.length; i++)\n        s += a[i];\n    return s;\n}\n```\n\n**Diagnosis:** Three bugs:\n1. **Missing null check** — would throw NPE on null input.\n2. **Off-by-one loop bound** — `i \u003c= a.length` iterates one past the last element, causing `ArrayIndexOutOfBoundsException`.\n3. **Assignment instead of accumulation** — `s = a[i]` overwrites `s` each iteration instead of adding (`s += a[i]`)."
+    },
+    {
+        "profile":  "kat-recipe",
+        "model":  "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
+        "case":  "version-grounding",
+        "status":  "ok",
+        "load_seconds":  14.62,
+        "vram_mib":  16748,
+        "elapsed_seconds":  4.636,
+        "completion_tokens":  700,
+        "tokens_per_second":  150.99,
+        "finish_reason":  "length",
+        "answer":  "# Why Using a 26.1 API Example Without Checking Exact 26.2 Sources Is Unsafe\n\n## The Core Risk\n\nNeoForge 26.1 and 26.2 are **not** semantically equivalent. Even within the same major release line (26.x), minor version bumps can introduce:\n\n- **API method removals or renames** — deprecated methods from 26.1 may be stripped in 26.2, causing compile-time failures that look like logic errors.\n- **Signature changes** — parameter types, added/removed generic bounds, or changed return types that silently break assumptions.\n- **Behavioral contract shifts** — methods that still compile but now throw, return different values, or trigger different side effects.\n- **New required initialization** — 26.2 may introduce setup steps (event bus registration, config loading order, etc.) that 26.1 examples omit.\n- **Dependency transitive changes** — a library version bump between 26.1 and 26.2 can alter the surface area your code interacts with.\n\nA 26.1 example that \"works\" is a **local truth**, not a universal one. Copying it into a 26.2 context without verification treats a coincidental compatibility as a guarantee.\n\n## Concrete Failure Modes\n\n| Failure Mode | What Happens | Why It\u0027s Dangerous |\n|---|---|---|\n| Compile-time API mismatch | Method not found / signature mismatch | Surface-level, but can cascade into workaround patches |\n| Runtime `NoSuchMethodError` | Class loaded but method absent | Hard to diagnose; looks like a mod loading bug |\n| Subtle behavioral drift | Code compiles and runs, but logic is wrong | The most dangerous category — no error, just incorrect results |\n| Missing required setup | Feature silently fails or crashes at trigger time | Appears as a configuration issue, not a version issue |\n\n## The Evidence Order\n\nWhen validating a migration path, follow this hierarchy:\n\n### 1. Hardened Fixes\n**Start here.** These are confirmed, tested corrections from the NeoForge community or project maintainers that address known migration pain points. They carry the highest confidence because they are battle-tested.\n- Look for: changelog entries, issue tracker fixes, PR merges, migration guides from the NeoForge team.\n- These tell you what *definitely broke* and what *definitely works* — the narrow"
+    },
+    {
+        "profile":  "kat-recipe",
+        "model":  "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
+        "case":  "uncertainty",
+        "status":  "ok",
+        "load_seconds":  14.62,
+        "vram_mib":  16748,
+        "elapsed_seconds":  3.115,
+        "completion_tokens":  467,
+        "tokens_per_second":  149.92,
+        "finish_reason":  "stop",
+        "answer":  "## Safe Action: Escalate\n\n**Evidence:**\n- The class is present in 26.1 examples.\n- The class is absent from the 26.2 source tree.\n\n**Inference (not fact):**\n- The class was likely removed, renamed, or relocated between versions — but this is not confirmed.\n\n**Why escalate rather than guess:**\n\n| Action | Risk |\n|---|---|\n| **Invent an import** | Compiles nothing; crashes at runtime with `ClassNotFoundException`. |\n| **Copy the 26.1 call** | May call a method with a different signature, removed behavior, or incompatible API in 26.2. |\n| **Escalate** | Lets you (or the community) verify changelogs, search for renames/moves, and confirm the correct replacement. |\n\n**Before escalating, do a quick check:**\n1. Search the 26.2 source tree for related names (possible rename).\n2. Check the NeoForge changelog for deprecation/removal notes.\n3. If still unresolved, report it — this is the only way to avoid shipping broken code.\n\n**Blind copying between minor versions is the most common source of subtle runtime crashes.** When in doubt, escalate."
+    },
+    {
+        "profile":  "kat-recipe",
+        "case":  "runtime",
+        "status":  "failed",
+        "answer":  "The property \u0027Count\u0027 cannot be found on this object. Verify that the property exists."
+    }
+]

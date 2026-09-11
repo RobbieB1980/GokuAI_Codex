@@ -1,0 +1,6 @@
+logs/
+state/
+.gokuai/issues/
+*.pid
+*.log
+

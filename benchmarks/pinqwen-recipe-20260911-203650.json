@@ -1,0 +1,47 @@
+﻿[
+    {
+        "profile":  "pinqwen-recipe",
+        "model":  "C:\\gokuai\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
+        "case":  "code-repair",
+        "status":  "ok",
+        "load_seconds":  8.59,
+        "vram_mib":  11649,
+        "elapsed_seconds":  3.63,
+        "completion_tokens":  279,
+        "tokens_per_second":  76.85,
+        "finish_reason":  "stop",
+        "answer":  "```java\npublic static int sum(int[] a) {\n    if (a == null) return 0;\n    int s = 0;\n    for (int i = 0; i \u003c a.length; i++) {\n        s += a[i];\n    }\n    return s;\n}\n```\n\n**Diagnosis:**\n\n1. **Off-by-one error:** `i \u003c= a.length` accesses index `a.length`, which is out of bounds. Should be `i \u003c a.length`.\n2. **Missing null check:** Calling `a.length` on a `null` array throws `NullPointerException`. The spec requires returning `0` for null.\n3. **Accumulation typo:** `s = a[i]` overwrites `s` each iteration instead of adding. Should be `s += a[i]`.\n\nAll three bugs are fixed in the corrected version above."
+    },
+    {
+        "profile":  "pinqwen-recipe",
+        "model":  "C:\\gokuai\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
+        "case":  "version-grounding",
+        "status":  "ok",
+        "load_seconds":  8.59,
+        "vram_mib":  11649,
+        "elapsed_seconds":  8.964,
+        "completion_tokens":  700,
+        "tokens_per_second":  78.09,
+        "finish_reason":  "length",
+        "answer":  "# Why a 26.1 API Example Is Unsafe for a 26.2 Target\n\n## Evidence Order\n\nThe reasoning below follows this sequence: **hardened fixes → compact version primers → exact target sources → broader retrieval**.\n\n---\n\n### 1. Hardened Fixes (Highest Priority)\n\nBefore any API comparison is meaningful, the migration must account for **version-harmonized patches** that exist only in 26.2 and not in 26.1:\n\n- **API surface corrections** released between 26.1 and 26.2 that fix regressions or change method signatures. A 26.1 example may reference a method that was *removed* or *renamed* in 26.2.\n- **Security and sandboxing changes** (e.g., `UserProvided` vs `UserProvidedOrSystem` distinctions) that alter how reflection and NMS access are permitted.\n- **Loader-level changes** in `NeoForgeMod` and `Bootstrap` that affect mod registration timing.\n\nUsing a 26.1 example bypasses these hardened fixes, meaning the 26.2 build will either fail to compile or, worse, compile against an API that behaves differently at runtime.\n\n---\n\n### 2. Compact Version Primers (Contextual Boundaries)\n\nA version primer is the minimal set of facts that anchors the migration:\n\n| Version | Status | Relevance to 26.2 |\n|---------|--------"
+    },
+    {
+        "profile":  "pinqwen-recipe",
+        "model":  "C:\\gokuai\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
+        "case":  "uncertainty",
+        "status":  "ok",
+        "load_seconds":  8.59,
+        "vram_mib":  11649,
+        "elapsed_seconds":  7.259,
+        "completion_tokens":  568,
+        "tokens_per_second":  78.25,
+        "finish_reason":  "stop",
+        "answer":  "## Safe Action: Escalate\n\n**Evidence**\n- The class exists in the NeoForge 26.1 example code\n- The class is absent from the NeoForge 26.2 source tree\n\n**Inference**\n- The class was likely removed, renamed, or moved in version 26.2\n- The 26.1 example is no longer valid for 26.2 builds\n- Blindly copying or inventing references will cause compilation or runtime failures\n\n**Why escalate:**\n- **Inventing an import** fabricates a reference to a non-existent class — guaranteed to break\n- **Copying the 26.1 call** references the same missing class — same failure mode\n- **Escalating** routes the issue to the maintainers, who can confirm whether the class was deprecated, relocated, or removed, and provide the correct migration path\n\nThis follows the principle of not assuming API stability across patch versions when the source itself indicates the symbol is gone."
+    },
+    {
+        "profile":  "pinqwen-recipe",
+        "case":  "runtime",
+        "status":  "failed",
+        "answer":  "The property \u0027Count\u0027 cannot be found on this object. Verify that the property exists."
+    }
+]
