@@ -31,7 +31,7 @@ public sealed class MainForm : Form
     private readonly Button _btnBrowseOut = NewButton("Browse...", 110);
     private readonly Button _btnRun = NewButton("Convert", 130);
     private readonly Button _btnOpenOut = NewButton("Open output", 130);
-    private readonly Button _btnFixGrok = NewButton("Repair in Codex", 130);
+    private readonly Button _btnFixGrok = NewButton("Repair with KAT", 145);
     private readonly Button _btnClear = NewButton("Clear log", 120);
     private readonly ProgressBar _progress = new()
     {
@@ -323,7 +323,7 @@ public sealed class MainForm : Form
             else
                 MessageBox.Show(this, "Output does not exist yet.", "Open output", MessageBoxButtons.OK, MessageBoxIcon.Information);
         };
-        _btnFixGrok.Click += (_, _) => LaunchCodexRepairSession(offerPrompt: false);
+        _btnFixGrok.Click += (_, _) => LaunchKatRepairSession(offerPrompt: false);
         _btnClear.Click += (_, _) => _log.Clear();
 
         Shown += (_, _) =>
@@ -863,8 +863,8 @@ public sealed class MainForm : Form
                     _btnFixGrok.Enabled = true;
                     if (File.Exists(Path.Combine(_lastOutput, "compile-errors.log")))
                         AppendLog("See compile-errors.log for the first remaining build error.", Color.Khaki);
-                    AppendLog("Click \"Repair in Codex\" to open Codex with primers and solved cases first.", Color.Khaki);
-                    LaunchCodexRepairSession(offerPrompt: true);
+                    AppendLog("Click \"Repair with KAT\" to run the local KAT worker with primers and solved cases first.", Color.Khaki);
+                    LaunchKatRepairSession(offerPrompt: true);
                 }
             }
             try { _running.Dispose(); } catch { /* ignore */ }
@@ -874,15 +874,15 @@ public sealed class MainForm : Form
     }
 
     /// <summary>
-    /// Opens Codex through C:\GokuCodexAI\Open-CodexRepairSession.ps1,
+    /// Opens local KAT through C:\GokuCodexAI\Open-KATRepairSession.ps1,
     /// with a prompt that forces MIGRATION_EVIDENCE / primers / CASE files before inventing fixes.
     /// </summary>
-    private void LaunchCodexRepairSession(bool offerPrompt)
+    private void LaunchKatRepairSession(bool offerPrompt)
     {
         var output = string.IsNullOrWhiteSpace(_lastOutput) ? _txtOutput.Text.Trim() : _lastOutput;
         if (string.IsNullOrWhiteSpace(output) || !Directory.Exists(output))
         {
-            MessageBox.Show(this, "No conversion output folder to repair yet.", "Repair in Codex",
+            MessageBox.Show(this, "No conversion output folder to repair yet.", "Repair with KAT",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -891,30 +891,30 @@ public sealed class MainForm : Form
         {
             var ask = MessageBox.Show(this,
                 "Conversion failed but a scaffold was written.\n\n" +
-                "Open Codex in C:\\GokuCodexAI to repair it?\n" +
+                "Open local KAT in C:\\GokuCodexAI to repair it?\n" +
                 "The session will be instructed to read MIGRATION_EVIDENCE, primers, and CASE files BEFORE inventing fixes.",
-                "Repair in Codex",
+                "Repair with KAT",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
             if (ask != DialogResult.Yes) return;
         }
 
         const string gokuRoot = @"C:\GokuCodexAI";
-        var startGoku = Path.Combine(gokuRoot, "Open-CodexRepairSession.ps1");
+        var startGoku = Path.Combine(gokuRoot, "Open-KATRepairSession.ps1");
         var workspace = Path.Combine(gokuRoot, "projects", "RMCodexMCConverter");
         if (!File.Exists(startGoku))
         {
             MessageBox.Show(this,
-                "Open-CodexRepairSession.ps1 was not found at:\n" + startGoku +
+                "Open-KATRepairSession.ps1 was not found at:\n" + startGoku +
                 "\n\nInstall/update GokuCodexAI first (C:\\GokuCodexAI).",
-                "Repair in Codex", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                "Repair with KAT", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         if (!Directory.Exists(workspace))
         {
             MessageBox.Show(this,
                 "Converter workspace missing:\n" + workspace,
-                "Repair in Codex", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                "Repair with KAT", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -937,14 +937,14 @@ public sealed class MainForm : Form
                 WorkingDirectory = workspace
             });
 
-            AppendLog("Launched Codex repair workspace.", Color.LightSkyBlue);
+            AppendLog("Launched local KAT repair workspace (no OpenAI model usage).", Color.LightSkyBlue);
             AppendLog("Workspace: " + workspace, Color.DimGray);
             AppendLog("Prompt file: " + promptPath, Color.DimGray);
         }
         catch (Exception ex)
         {
-            AppendLog("Failed to launch Codex: " + ex.Message, Color.Salmon);
-            MessageBox.Show(this, ex.Message, "Repair in Codex", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            AppendLog("Failed to launch local KAT: " + ex.Message, Color.Salmon);
+            MessageBox.Show(this, ex.Message, "Repair with KAT", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

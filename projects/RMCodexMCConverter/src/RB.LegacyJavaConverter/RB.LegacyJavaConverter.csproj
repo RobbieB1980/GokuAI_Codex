@@ -22,6 +22,7 @@
     <None Include="..\..\Convert-JarToProject.ps1" Link="tools\Convert-JarToProject.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Convert-OldJarToNeoForge262.ps1" Link="tools\Convert-OldJarToNeoForge262.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Open-CodexRepairSession.ps1" Link="tools\Open-CodexRepairSession.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\Open-KATRepairSession.ps1" Link="tools\Open-KATRepairSession.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Build-WithDestinationJava.ps1" Link="tools\Build-WithDestinationJava.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\README.md" Link="tools\README.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\ConversionCore.ps1" Link="tools\lib\ConversionCore.ps1" CopyToOutputDirectory="PreserveNewest" />
