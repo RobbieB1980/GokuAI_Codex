@@ -13,10 +13,16 @@ if(-not(Test-Path -LiteralPath $PromptFile -PathType Leaf)){throw "Repair reques
 $codexCommand=Get-Command codex -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
 $codex=if($codexCommand){$codexCommand.Source}else{$null}
 if(-not $codex){
-    $codex=where.exe codex.exe 2>$null | Where-Object {Test-Path -LiteralPath $_ -PathType Leaf} | Select-Object -First 1
+    $savedErrorActionPreference=$ErrorActionPreference
+    try{
+        $ErrorActionPreference='SilentlyContinue'
+        $codex=where.exe codex.exe 2>$null | Where-Object {Test-Path -LiteralPath $_ -PathType Leaf} | Select-Object -First 1
+    }
+    finally{$ErrorActionPreference=$savedErrorActionPreference}
 }
 if(-not $codex){
     $knownPackages=@(
+        'C:\Program Files\WindowsApps\OpenAI.CodexBeta_26.727.4816.0_x64__2p2nqsd0c76g0\app\resources\codex.exe',
         'C:\Program Files\WindowsApps\OpenAI.CodexBeta_*\app\resources\codex.exe',
         'C:\Program Files\WindowsApps\OpenAI.Codex_*\app\resources\codex.exe'
     )
