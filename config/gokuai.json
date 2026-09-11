@@ -11,7 +11,7 @@
   "model": {
     "alias": "goku-local",
     "model": "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
-    "context_size": 32768,
+    "context_size": 65536,
     "batch_size": 2048,
     "ubatch_size": 1024
   },
