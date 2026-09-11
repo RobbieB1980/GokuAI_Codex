@@ -24,6 +24,7 @@
     <None Include="..\..\Open-CodexRepairSession.ps1" Link="tools\Open-CodexRepairSession.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Open-KATRepairSession.ps1" Link="tools\Open-KATRepairSession.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Build-WithDestinationJava.ps1" Link="tools\Build-WithDestinationJava.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\Find-ExactSource.ps1" Link="tools\Find-ExactSource.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\README.md" Link="tools\README.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\ConversionCore.ps1" Link="tools\lib\ConversionCore.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\USAGE.md" Link="tools\docs\USAGE.md" CopyToOutputDirectory="PreserveNewest" />
