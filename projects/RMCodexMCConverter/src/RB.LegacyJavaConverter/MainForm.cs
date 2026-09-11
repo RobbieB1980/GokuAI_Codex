@@ -958,7 +958,9 @@ public sealed class MainForm : Form
         return
             "Repair this failed RMCodexMCConverter to NeoForge 26.2 conversion.\n\n" +
             "FAILED OUTPUT FOLDER:\n" + failedOutput + "\n\n" +
-            "CONTEXT SAFETY: Never read a full compile log, primer, source tree, or file over 200 lines. Search first and read at most 120 relevant lines per file. Keep gathered evidence under 12,000 tokens.\n\n" +
+            "CONTEXT SAFETY: Never read a full compile log, primer, source tree, or file over 200 lines. Search first and read at most 120 relevant lines per file. Keep gathered evidence under 12,000 tokens.\n" +
+            "WINDOWS TOOLS: Do not use Python, py, Add-Type, GZipFile, or extract a full source tree. Inspect source JAR entries with tar.exe -tf and read one entry with tar.exe -xOf. Never retry equivalent missing/denied tools.\n" +
+            "REPAIR BUDGET: Group errors by root cause. Maximum 3 edit/build cycles and 3 builds. Stop after the same root error survives twice or two tool/environment failures; write KAT_ESCALATION.md.\n\n" +
             "MANDATORY EVIDENCE ORDER:\n" +
             "1. Read " + evidence + ", " + profile + ", and a small excerpt of " + errors + ".\n" +
             "2. Write a bounded evidence packet to " + packet + ".\n" +
