@@ -6,6 +6,7 @@ import argparse
 import json
 import sqlite3
 import sys
+from contextlib import closing
 from pathlib import Path
 
 
@@ -24,6 +25,25 @@ def active_db(canonical: Path) -> Path:
         if candidate.exists():
             return candidate
     return canonical
+
+
+def active_pointer_target(canonical: Path) -> tuple[Path, Path | None, bool]:
+    pointer = canonical.parent / '_ACTIVE_DB.txt'
+    try:
+        name = pointer.read_text(encoding='utf-8-sig').strip()
+    except OSError:
+        return pointer, None, False
+    if not name:
+        return pointer, None, False
+    target = Path(name)
+    if not target.is_absolute():
+        target = canonical.parent / target
+    target = target.resolve()
+    try:
+        target.relative_to(canonical.parent.resolve())
+    except ValueError:
+        return pointer, target, False
+    return pointer, target, target.is_file()
 
 
 def ro(path: Path) -> sqlite3.Connection:
@@ -74,16 +94,15 @@ def main() -> int:
     check('data_root_exists', data.is_dir(), str(data), failures, warnings)
     check('knowledge_db_exists', knowledge_db.is_file(), str(knowledge_db), failures, warnings)
     check('mapping_db_exists', mapping_db.is_file(), str(mapping_db), failures, warnings)
-    check(
-        'active_pointer',
-        (knowledge_canonical.parent / '_ACTIVE_DB.txt').is_file(),
-        str(knowledge_canonical.parent / '_ACTIVE_DB.txt'),
-        failures,
-        warnings,
-    )
+    knowledge_pointer, knowledge_target, knowledge_pointer_ok = active_pointer_target(knowledge_canonical)
+    mapping_pointer, mapping_target, mapping_pointer_ok = active_pointer_target(mapping_canonical)
+    check('knowledge_active_pointer_target', knowledge_pointer_ok,
+          f'pointer={knowledge_pointer} target={knowledge_target}', failures, warnings)
+    check('mapping_active_pointer_target', mapping_pointer_ok,
+          f'pointer={mapping_pointer} target={mapping_target}', failures, warnings)
 
     if knowledge_db.is_file():
-        with ro(knowledge_db) as con:
+        with closing(ro(knowledge_db)) as con:
             files = int(con.execute('SELECT COUNT(*) FROM files').fetchone()[0])
             chunks = int(con.execute('SELECT COUNT(*) FROM chunks').fetchone()[0])
             metrics['files'] = files
@@ -170,7 +189,7 @@ def main() -> int:
                 )
 
     if mapping_db.is_file():
-        with ro(mapping_db) as con:
+        with closing(ro(mapping_db)) as con:
             tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             metrics['mapping_tables'] = sorted(tables)
             # Prefer a lightweight readiness probe over full table scans on a multi-GB DB.
@@ -187,6 +206,21 @@ def main() -> int:
                 probe_ok = len(tables) > 0
             metrics['mapping_probe'] = detail
             check('mapping_db_readable', probe_ok, detail, failures, warnings)
+            if {'sources', 'symbols'}.issubset(tables):
+                namespaces = {r[0] for r in con.execute(
+                    'SELECT namespace_from FROM symbols UNION SELECT namespace_to FROM symbols'
+                )}
+                expected_namespaces = {'obfuscated', 'srg', 'mcp', 'official'}
+                check('mapping_namespaces', expected_namespaces.issubset(namespaces),
+                      f'namespaces={sorted(namespaces)}', failures, warnings)
+                missing_mapping_sources = []
+                for row in con.execute('SELECT physical_path FROM sources'):
+                    if not Path(row[0]).is_file() and len(missing_mapping_sources) < 10:
+                        missing_mapping_sources.append(row[0])
+                check('mapping_source_paths', not missing_mapping_sources,
+                      f'missing={len(missing_mapping_sources)}' +
+                      (f' examples={missing_mapping_sources}' if missing_mapping_sources else ''),
+                      failures, warnings)
 
     # Stale path hygiene
     manifest = data / 'knowledge_manifest.json'
@@ -194,6 +228,33 @@ def main() -> int:
         text = manifest.read_text(encoding='utf-8-sig')
         stale = 'rmblocal_llm' in text
         check('manifest_no_rmblocal', not stale, str(manifest), failures, warnings)
+        try:
+            manifest_data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            manifest_data = {}
+            failures.append({'check': 'source_manifest_complete', 'ok': False,
+                             'detail': f'invalid JSON: {exc}'})
+        if manifest_data:
+            repo_results = manifest_data.get('repository_results') or {}
+            bad_results = {name: value.get('status') for name, value in repo_results.items()
+                           if value.get('status') in {'failed', 'retained_stale'}}
+            manifest_ok = manifest_data.get('status', 'success') == 'success' and not bad_results
+            check('source_manifest_complete', manifest_ok,
+                  f"status={manifest_data.get('status', 'legacy-success')} bad_repositories={bad_results}",
+                  failures, warnings)
+            missing_repositories = [path for path in (manifest_data.get('repository_paths') or {}).values()
+                                    if not Path(path).is_dir()]
+            check('canonical_repository_paths', not missing_repositories,
+                  f'missing={len(missing_repositories)}' +
+                  (f' examples={missing_repositories[:5]}' if missing_repositories else ''),
+                  failures, warnings)
+    else:
+        check('source_manifest_complete', False, f'missing={manifest}', failures, warnings)
+
+    partial_files = [str(path) for path in data.rglob('*.part') if path.is_file()]
+    check('partial_files_absent', not partial_files,
+          f'found={len(partial_files)}' + (f' examples={partial_files[:5]}' if partial_files else ''),
+          failures, warnings)
     status = data / 'Minecraft_Mappings_Corpus' / '_STATUS.json'
     if status.is_file():
         text = status.read_text(encoding='utf-8-sig')
@@ -203,7 +264,7 @@ def main() -> int:
     # Legacy goku-data coverage warning (non-fatal)
     goku = station / 'DataIndex' / 'goku-data.db'
     if goku.is_file():
-        with ro(goku) as con:
+        with closing(ro(goku)) as con:
             java_sources = int(con.execute(
                 "SELECT COUNT(*) FROM sources WHERE lower(path) LIKE '%.java'"
             ).fetchone()[0])
@@ -227,7 +288,9 @@ def main() -> int:
     if args.json_out:
         out = Path(args.json_out)
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(report, indent=2), encoding='utf-8')
+        part = out.with_suffix(out.suffix + '.part')
+        part.write_text(json.dumps(report, indent=2), encoding='utf-8')
+        part.replace(out)
         print(f'Report: {out}')
 
     print(json.dumps({'ok': report['ok'], 'failure_count': len(failures), 'warning_count': len(warnings)}, indent=2))

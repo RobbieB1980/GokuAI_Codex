@@ -487,9 +487,9 @@ def main() -> int:
         })
 
         downloads = meta.get("downloads", {})
-        # v1.2.22 defaults to a client-focused corpus.  The Minecraft client JAR
-        # already carries the common/runtime code needed for client-side modding,
-        # while dedicated-server artifacts add a large, overlapping mapping set.
+        # The Minecraft client JAR carries the common/runtime code needed for
+        # client-side modding, while the dedicated-server JAR is large and mostly
+        # overlapping. Both compact official mapping files remain useful.
         # Both mapping files are retained by default. The much larger dedicated
         # server JAR remains opt-in for server-only bytecode inspection.
         targets = mojang_download_targets(args.include_server_jar)
