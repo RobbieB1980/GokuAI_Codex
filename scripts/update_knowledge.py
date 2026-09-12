@@ -237,6 +237,19 @@ def should_include_snapshots(release_only: bool) -> bool:
     return not release_only
 
 
+def select_mojang_versions(manifest: dict[str, Any], release_only: bool) -> list[dict[str, Any]]:
+    releases = [
+        version for version in manifest.get("versions", [])
+        if version.get("type") == "release" and version_in_range(version.get("id", ""), "1.12")
+    ]
+    if release_only:
+        return releases
+    latest_snapshot = manifest.get("latest", {}).get("snapshot")
+    snapshot = next((version for version in manifest.get("versions", [])
+                     if version.get("id") == latest_snapshot and version.get("type") != "release"), None)
+    return releases + ([snapshot] if snapshot else [])
+
+
 def mojang_download_targets(include_server_jar: bool) -> dict[str, str]:
     targets = {
         "client": "client.jar",
@@ -411,13 +424,9 @@ def main() -> int:
     cleanup = ({"reference_mirrors": 0, "primer_mirrors": 0, "mapping_mirrors": 0,
                 "completed_project_mirrors": 0}
                if source_failed else remove_generated_duplicate_mirrors(root, args.quiet))
-    releases = [
-        v for v in manifest.get("versions", [])
-        if v.get("type") == "release" and version_in_range(v.get("id", ""), "1.12")
-    ]
+    selected_versions = select_mojang_versions(manifest, args.release_only)
+    releases = [version for version in selected_versions if version.get("type") == "release"]
     include_snapshots = should_include_snapshots(args.release_only)
-    snapshots = [v for v in manifest.get("versions", []) if v.get("type") != "release"] if include_snapshots else []
-    selected_versions = releases + snapshots
 
     # Version-oriented primer folders are pointer metadata only; no source files are copied.
     primer_checkout = checkouts.get("neoforge_primers")

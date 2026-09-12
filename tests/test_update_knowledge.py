@@ -68,6 +68,26 @@ class SourceUpdaterTests(unittest.TestCase):
         })
         self.assertEqual(server_targets["server"], "server.jar")
 
+    def test_default_selection_includes_supported_releases_and_only_latest_snapshot(self):
+        manifest = {
+            "latest": {"snapshot": "26.3-pre-1"},
+            "versions": [
+                {"id": "26.3-pre-1", "type": "snapshot"},
+                {"id": "26.2-snapshot-9", "type": "snapshot"},
+                {"id": "26.2", "type": "release"},
+                {"id": "1.12", "type": "release"},
+                {"id": "1.11.2", "type": "release"},
+            ],
+        }
+
+        selector = getattr(updater, "select_mojang_versions", None)
+        self.assertTrue(callable(selector), "select_mojang_versions must exist")
+        selected = selector(manifest, release_only=False)
+        release_only = selector(manifest, release_only=True)
+
+        self.assertEqual([item["id"] for item in selected], ["26.2", "1.12", "26.3-pre-1"])
+        self.assertEqual([item["id"] for item in release_only], ["26.2", "1.12"])
+
 
 if __name__ == "__main__":
     unittest.main()
