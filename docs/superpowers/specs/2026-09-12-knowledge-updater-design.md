@@ -13,13 +13,13 @@ The refresh covers:
 - NeoForge primers and documentation
 - NeoForge, NeoForm, and ModDevGradle source repositories
 - Gradle, Forge, GeckoLib, MCreator, and MCPConfig repositories
-- Mojang version metadata, client JARs, and official client mappings from Minecraft 1.12 onward
+- Mojang version metadata, client JARs, and both official client and server mappings from Minecraft 1.12 onward
 - MCP stable 39 names for Minecraft 1.12.2
 - the compact obfuscated/SRG/MCP/official mapping crosswalk
 - the general full-text knowledge index
 - status, provenance, and validation reports
 
-Snapshots are included by default. Dedicated-server artifacts remain an explicit command-line option. Exact-version source trees already present under `Data/Exact_Version_Sources` are indexed and audited for freshness, but this first completed pipeline will not synthesize or switch their branches automatically; that requires a separate version-selection policy.
+Snapshots and both client and server mapping files are included by default. The dedicated-server JAR remains an explicit command-line option. Exact-version source trees already present under `Data/Exact_Version_Sources` are indexed and audited for freshness, but this first completed pipeline will not synthesize or switch their branches automatically; that requires a separate version-selection policy.
 
 ## Operator Interface
 
@@ -32,7 +32,7 @@ Create `Update-GokuKnowledge.ps1` at the repository root. Its default invocation
 Supported switches:
 
 - `-ReleaseOnly`: exclude Mojang snapshots.
-- `-IncludeServerArtifacts`: retain and index dedicated-server JARs and mappings.
+- `-IncludeServerJar`: retain the dedicated-server JAR; server mappings do not require this switch.
 - `-SkipSourceUpdate`: rebuild derived data from current local sources without network access.
 - `-ReportPath <path>`: override the default timestamped report location under `logs/knowledge-update`.
 
@@ -57,7 +57,7 @@ Repository failures are recorded and make the source stage fail, but existing wo
 
 Add `scripts/build_mapping_corpus.py` as the owned implementation for the existing schema-v3 database. It discovers canonical inputs from:
 
-- Mojang `client_mappings.txt` and optional `server_mappings.txt`
+- Mojang `client_mappings.txt` and `server_mappings.txt`
 - MCPConfig TSRG/mapping files
 - MCP stable CSV files where available
 
@@ -125,8 +125,8 @@ A final offline integration test builds small fixture mapping and knowledge data
 Update `README.md` with:
 
 - the one-command refresh workflow
-- default client-only, snapshots-enabled behavior
-- release-only and server switches
+- default snapshots-enabled behavior with both client and server mappings
+- release-only and optional server-JAR switches
 - offline derived-index rebuild
 - report location and failure interpretation
 - a statement that no scheduled task is installed

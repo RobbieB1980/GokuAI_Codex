@@ -14,7 +14,7 @@
 
 - The workflow is manually invoked; it must not create or modify Windows scheduled tasks.
 - Mojang snapshots are enabled by default; `-ReleaseOnly` disables them.
-- Dedicated-server artifacts are disabled by default; `-IncludeServerArtifacts` enables them.
+- Client and server mapping files are enabled by default; `-IncludeServerJar` additionally enables the dedicated-server JAR.
 - Existing active databases and Git checkouts remain usable after any failed stage.
 - No new Python packages may be required.
 - Canonical data stays under `C:\GokuCodexAI\Data` in zero-copy form.
@@ -91,18 +91,18 @@ git commit -m "feat: make knowledge source updates recoverable"
 
 **Interfaces:**
 - Produces: `MappingRecord` values with version, namespace pair, kind, owners, names, and signature.
-- Produces: `discover_sources(data_root: Path, include_server: bool) -> list[SourceInput]`
+- Produces: `discover_sources(data_root: Path) -> list[SourceInput]`
 - Produces: `parse_source(source: SourceInput) -> Iterator[MappingRecord]`
-- Produces: `build_corpus(data_root: Path, output_root: Path, include_server: bool = False) -> dict[str, Any]`
+- Produces: `build_corpus(data_root: Path, output_root: Path) -> dict[str, Any]`
 - Produces: schema-v3 `sources` and `symbols` tables consumed unchanged by `knowledge_mcp.py`.
 
 - [ ] **Step 1: Write failing parser tests using minimal real mapping fixtures**
 
 ```python
 def test_parses_mojang_method(self):
-    rows = list(parse_mojang(["a.b.C -> net.minecraft.C:", "    1:1:void a(int) -> tick"]))
-    self.assertEqual((rows[0].namespace_from, rows[0].namespace_to), ("obfuscated", "official"))
-    self.assertEqual((rows[0].name_from, rows[0].name_to), ("tick", "a"))
+    rows = list(parse_mojang(["net.minecraft.C -> a.b.C:", "    1:1:void tick(int) -> a"]))
+    self.assertEqual((rows[1].namespace_from, rows[1].namespace_to), ("official", "obfuscated"))
+    self.assertEqual((rows[1].name_from, rows[1].name_to), ("tick", "a"))
 
 def test_parses_tsrg2_method(self):
     rows = list(parse_tsrg2(["tsrg2 obf srg", "a net/minecraft/C", "\tb (I)V m_123_"]))
@@ -183,7 +183,7 @@ git commit -m "feat: add incremental mapping corpus builder"
 
 **Interfaces:**
 - Consumes: the three Python CLIs and their exit codes/status JSON files.
-- Produces: parameters `ReleaseOnly`, `IncludeServerArtifacts`, `SkipSourceUpdate`, and `ReportPath`.
+- Produces: parameters `ReleaseOnly`, `IncludeServerJar`, `SkipSourceUpdate`, and `ReportPath`.
 - Produces: JSON report schema `goku-knowledge-update-v1` with `status`, timestamps, arguments, stage array, active database paths, and validation result.
 
 - [ ] **Step 1: Write a failing PowerShell harness for stage order and failure stops**
@@ -208,7 +208,7 @@ Expected: failure locating `Update-GokuKnowledge.ps1`.
 
 - [ ] **Step 3: Implement wrapper, exclusive lock, stage runner, and always-written report**
 
-Use an exclusive `FileStream` for `state\knowledge-update.lock`; invoke `runtime\python-mcp\Scripts\python.exe`; translate `-ReleaseOnly` to `--release-only`; run validation after failures against retained active databases; release the lock in `finally`; serialize the report with `ConvertTo-Json -Depth 10` to a `.part` file and atomically move it into place.
+Use an exclusive `FileStream` for `state\knowledge-update.lock`; invoke `runtime\python-mcp\Scripts\python.exe`; translate `-ReleaseOnly` to `--release-only` and `-IncludeServerJar` to `--include-server-jar`; run validation after failures against retained active databases; release the lock in `finally`; serialize the report with `ConvertTo-Json -Depth 10` to a `.part` file and atomically move it into place.
 
 - [ ] **Step 4: Run the PowerShell harness until green**
 
@@ -259,7 +259,7 @@ Expected: failure because partial-file and manifest-completion validation is abs
 
 - [ ] **Step 3: Add bounded validation checks and document the workflow**
 
-Check pointer existence, source manifest status, canonical paths, namespaces, minimum mapping sources, and updater-owned `.part` files. Document `Update-GokuKnowledge.ps1`, default snapshots/client-only behavior, `-ReleaseOnly`, server artifacts, offline rebuild, reports, and the absence of scheduling.
+Check pointer existence, source manifest status, canonical paths, namespaces, minimum mapping sources, and updater-owned `.part` files. Document `Update-GokuKnowledge.ps1`, default snapshots and dual mapping files, `-ReleaseOnly`, the optional server JAR, offline rebuild, reports, and the absence of scheduling.
 
 - [ ] **Step 4: Run all automated tests**
 
@@ -305,7 +305,7 @@ Expected: both active pointers resolve, SQLite integrity checks pass, and both l
 
 Run: `.\Update-GokuKnowledge.ps1`
 
-Expected: snapshots are included, server artifacts remain excluded, every repository reports `updated` or `unchanged`, derived indexes switch safely, and validation succeeds.
+Expected: snapshots and both mapping files are included, the server JAR remains excluded, every repository reports `updated` or `unchanged`, derived indexes switch safely, and validation succeeds.
 
 - [ ] **Step 4: Review the report and repository diff**
 

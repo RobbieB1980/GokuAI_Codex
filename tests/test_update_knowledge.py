@@ -55,6 +55,19 @@ class SourceUpdaterTests(unittest.TestCase):
         self.assertTrue(updater.should_include_snapshots(release_only=False))
         self.assertFalse(updater.should_include_snapshots(release_only=True))
 
+    def test_both_mapping_files_are_default_but_server_jar_is_opt_in(self):
+        target_builder = getattr(updater, "mojang_download_targets", None)
+        self.assertTrue(callable(target_builder), "mojang_download_targets must exist")
+        default_targets = target_builder(include_server_jar=False)
+        server_targets = target_builder(include_server_jar=True)
+
+        self.assertEqual(default_targets, {
+            "client": "client.jar",
+            "client_mappings": "client_mappings.txt",
+            "server_mappings": "server_mappings.txt",
+        })
+        self.assertEqual(server_targets["server"], "server.jar")
+
 
 if __name__ == "__main__":
     unittest.main()

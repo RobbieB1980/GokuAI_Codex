@@ -237,6 +237,17 @@ def should_include_snapshots(release_only: bool) -> bool:
     return not release_only
 
 
+def mojang_download_targets(include_server_jar: bool) -> dict[str, str]:
+    targets = {
+        "client": "client.jar",
+        "client_mappings": "client_mappings.txt",
+        "server_mappings": "server_mappings.txt",
+    }
+    if include_server_jar:
+        targets["server"] = "server.jar"
+    return targets
+
+
 def _rmtree_onerror(func, path, exc_info):
     try:
         os.chmod(path, stat.S_IWRITE)
@@ -356,7 +367,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
     ap.add_argument("--release-only", action="store_true", help="Exclude Mojang snapshots (snapshots are included by default)")
-    ap.add_argument("--include-server-artifacts", action="store_true", help="Also retain/download dedicated server JARs and Mojang server mappings")
+    ap.add_argument("--include-server-jar", action="store_true", help="Also retain/download the dedicated server JAR (both mapping files are included by default)")
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--cleanup-only", action="store_true", help="Remove legacy generated mirrors without network access")
     args = ap.parse_args()
@@ -479,27 +490,18 @@ def main() -> int:
         # v1.2.22 defaults to a client-focused corpus.  The Minecraft client JAR
         # already carries the common/runtime code needed for client-side modding,
         # while dedicated-server artifacts add a large, overlapping mapping set.
-        # Server artifacts remain an explicit opt-in for users who build dedicated
-        # server mods or need server-only classes.
-        targets = {
-            "client": "client.jar",
-            "client_mappings": "client_mappings.txt",
-        }
-        if args.include_server_artifacts:
-            targets.update({
-                "server": "server.jar",
-                "server_mappings": "server_mappings.txt",
-            })
-        else:
-            for obsolete_name in ("server.jar", "server_mappings.txt"):
-                obsolete = vdir / obsolete_name
-                if obsolete.exists():
-                    try:
-                        obsolete.unlink()
-                        verify_cache.pop(str(obsolete.resolve()), None)
-                        log(f"Pruned client-only unused artifact: {obsolete}", args.quiet)
-                    except PermissionError:
-                        log(f"WARNING: Could not prune locked server artifact: {obsolete}", False)
+        # Both mapping files are retained by default. The much larger dedicated
+        # server JAR remains opt-in for server-only bytecode inspection.
+        targets = mojang_download_targets(args.include_server_jar)
+        if not args.include_server_jar:
+            obsolete = vdir / "server.jar"
+            if obsolete.exists():
+                try:
+                    obsolete.unlink()
+                    verify_cache.pop(str(obsolete.resolve()), None)
+                    log(f"Pruned optional server JAR: {obsolete}", args.quiet)
+                except PermissionError:
+                    log(f"WARNING: Could not prune locked server artifact: {obsolete}", False)
 
         for key, filename in targets.items():
             d = downloads.get(key)
@@ -520,11 +522,11 @@ def main() -> int:
                 "mcpconfig": mcp_path is not None,
                 "mcpconfig_canonical_path": str(mcp_path) if mcp_path else None,
                 "mcpconfig_indexed_in_place": mcp_path is not None,
-                "mojang_mappings": (vdir / "client_mappings.txt").exists() or (args.include_server_artifacts and (vdir / "server_mappings.txt").exists()),
+                "mojang_mappings": (vdir / "client_mappings.txt").exists() and (vdir / "server_mappings.txt").exists(),
                 "mojang_canonical_root": str(vdir.resolve()),
                 "mojang_client_mappings": str((vdir / "client_mappings.txt").resolve()) if (vdir / "client_mappings.txt").exists() else None,
-                "mojang_server_mappings": str((vdir / "server_mappings.txt").resolve()) if args.include_server_artifacts and (vdir / "server_mappings.txt").exists() else None,
-                "mapping_profile": "client+server" if args.include_server_artifacts else "client-only",
+                "mojang_server_mappings": str((vdir / "server_mappings.txt").resolve()) if (vdir / "server_mappings.txt").exists() else None,
+                "mapping_profile": "client+server",
                 "mojang_mapping_copy_count": 1,
             }
             write_json(mdir / "_STATUS.json", status)
@@ -562,8 +564,8 @@ def main() -> int:
         "latest_snapshot": manifest.get("latest", {}).get("snapshot"),
         "status": "failed" if source_failed else "success",
         "include_snapshots": include_snapshots,
-        "mapping_profile": "client+server" if args.include_server_artifacts else "client-only",
-        "include_server_artifacts": bool(args.include_server_artifacts),
+        "mapping_profile": "client+server",
+        "include_server_jar": bool(args.include_server_jar),
         "repositories": REPOS,
         "repository_paths": repo_paths,
         "repository_results": repo_results,
