@@ -51,6 +51,20 @@ class SourceUpdaterTests(unittest.TestCase):
         self.assertIn("offline", result["error"])
         self.assertEqual(result["path"], str(repo.resolve()))
 
+    def test_git_clone_enables_windows_long_paths(self):
+        upstream = self.root / "_upstream"
+        upstream.mkdir()
+        commands = []
+
+        def capture(command, cwd=None, quiet=False):
+            commands.append(command)
+
+        with mock.patch.object(updater, "run", side_effect=capture), \
+                mock.patch.object(updater, "git_value", return_value=None):
+            updater.update_git_repo("repo", "https://example.invalid/repo.git", upstream, True)
+
+        self.assertEqual(commands[0][:4], ["git", "-c", "core.longpaths=true", "clone"])
+
     def test_snapshots_are_default_and_release_only_opts_out(self):
         self.assertTrue(updater.should_include_snapshots(release_only=False))
         self.assertFalse(updater.should_include_snapshots(release_only=True))

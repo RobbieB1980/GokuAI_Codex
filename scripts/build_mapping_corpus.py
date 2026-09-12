@@ -79,7 +79,9 @@ def parse_tsrg2(lines: Iterable[str]) -> Iterator[MappingRecord]:
         if line.startswith("tsrg2 "):
             parts = line.split()
             if len(parts) >= 3:
-                namespace_from, namespace_to = parts[1:3]
+                normalize = {"obf": "obfuscated", "named": "official"}
+                namespace_from = normalize.get(parts[1], parts[1])
+                namespace_to = normalize.get(parts[2], parts[2])
             continue
         indent = len(line) - len(line.lstrip("\t"))
         parts = line.strip().split()
@@ -219,26 +221,38 @@ def atomic_write_json(path: Path, data: dict) -> None:
     atomic_write_text(path, json.dumps(data, indent=2, sort_keys=True))
 
 
-def validate_candidate(path: Path) -> bool:
+def candidate_validation_errors(path: Path) -> list[str]:
+    errors: list[str] = []
     try:
         with closing(sqlite3.connect(path)) as connection:
             if connection.execute("PRAGMA user_version").fetchone()[0] != 3:
-                return False
+                errors.append("schema version is not 3")
             tables = {row[0] for row in connection.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'")}
             if not {"sources", "symbols"}.issubset(tables):
-                return False
-            if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
-                return False
+                errors.append(f"required tables missing: {sorted(tables)}")
+                return errors
+            foreign = connection.execute("PRAGMA foreign_key_check").fetchone()
+            if foreign is not None:
+                errors.append(f"foreign key violation: {tuple(foreign)}")
             invalid = connection.execute("""
-                SELECT 1 FROM symbols
+                SELECT namespace_from,namespace_to,COUNT(*) FROM symbols
                 WHERE namespace_from NOT IN ('obfuscated','srg','mcp','official')
                    OR namespace_to NOT IN ('obfuscated','srg','mcp','official')
-                LIMIT 1
-            """).fetchone()
-            return invalid is None
-    except sqlite3.Error:
-        return False
+                GROUP BY namespace_from,namespace_to LIMIT 5
+            """).fetchall()
+            if invalid:
+                errors.append(f"invalid namespaces: {[tuple(row) for row in invalid]}")
+            quick_check = connection.execute("PRAGMA quick_check").fetchone()[0]
+            if quick_check != "ok":
+                errors.append(f"quick_check: {quick_check}")
+    except sqlite3.Error as exc:
+        errors.append(f"sqlite error: {exc}")
+    return errors
+
+
+def validate_candidate(path: Path) -> bool:
+    return not candidate_validation_errors(path)
 
 
 def _copy_active_database(active: Path, candidate: Path) -> None:
@@ -334,7 +348,8 @@ def build_corpus(data_root: Path, output_root: Path) -> dict:
                                    (records, int(cursor.lastrowid)))
             connection.commit()
         if not validate_candidate(candidate):
-            raise RuntimeError(f"Mapping candidate validation failed: {candidate}")
+            errors = candidate_validation_errors(candidate) or ["validation hook rejected candidate"]
+            raise RuntimeError(f"Mapping candidate validation failed: {candidate}: {'; '.join(errors)}")
         atomic_write_text(output_root / "_ACTIVE_DB.txt", candidate.name + "\n")
         with closing(sqlite3.connect(f"file:{candidate}?mode=ro", uri=True)) as connection:
             source_count = connection.execute("SELECT COUNT(*) FROM sources").fetchone()[0]

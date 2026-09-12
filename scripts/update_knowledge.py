@@ -84,7 +84,8 @@ def run(cmd: list[str], cwd: Path | None = None, quiet: bool = False) -> None:
 
 def git_value(repo: Path, *args: str) -> str | None:
     proc = subprocess.run(
-        ["git", "-c", f"safe.directory={repo}", "-C", str(repo), *args],
+        ["git", "-c", "core.longpaths=true", "-c", f"safe.directory={repo}",
+         "-C", str(repo), *args],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         text=True,
@@ -193,10 +194,12 @@ def update_git_repo(name: str, url: str, upstream: Path, quiet: bool) -> dict[st
     branch = git_value(dst, "branch", "--show-current") if existed else None
     try:
         if not existed:
-            run(["git", "clone", "--filter=blob:none", url, str(dst)], quiet=quiet)
+            run(["git", "-c", "core.longpaths=true", "clone", "--filter=blob:none", url, str(dst)], quiet=quiet)
         else:
-            run(["git", "-C", str(dst), "fetch", "--all", "--prune"], quiet=quiet)
-            run(["git", "-C", str(dst), "pull", "--ff-only"], quiet=quiet)
+            run(["git", "-c", "core.longpaths=true", "-C", str(dst),
+                 "fetch", "--all", "--prune"], quiet=quiet)
+            run(["git", "-c", "core.longpaths=true", "-C", str(dst),
+                 "pull", "--ff-only"], quiet=quiet)
     except Exception as exc:
         status = "retained_stale" if existed else "failed"
         log(f"WARNING: Git update failed for {name}; status={status}.", quiet=False)

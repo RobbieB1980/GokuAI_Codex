@@ -51,6 +51,8 @@ class MappingParserTests(unittest.TestCase):
         self.assertEqual(len(rows), 4)
         self.assertEqual((rows[0].kind, rows[0].name_from, rows[0].name_to),
                          ("class", "a", "net/minecraft/C"))
+        self.assertEqual((rows[0].namespace_from, rows[0].namespace_to),
+                         ("obfuscated", "srg"))
         self.assertEqual((rows[1].kind, rows[1].name_from, rows[1].name_to),
                          ("field", "b", "f_1_"))
         self.assertEqual((rows[2].kind, rows[2].name_from, rows[2].name_to),
@@ -110,6 +112,24 @@ class MappingBuilderTests(unittest.TestCase):
                 builder.build_corpus(self.data, self.out)
 
         self.assertEqual((self.out / "_ACTIVE_DB.txt").read_text(encoding="utf-8").strip(), old_name)
+
+    def test_candidate_validation_reports_invalid_namespace(self):
+        diagnostic = getattr(builder, "candidate_validation_errors", None)
+        self.assertTrue(callable(diagnostic), "candidate_validation_errors must exist")
+        database = self.root / "invalid.db"
+        with closing(sqlite3.connect(database)) as connection:
+            builder.initialize_schema(connection)
+            cursor = connection.execute("""INSERT INTO sources(
+                minecraft_version,source_type,physical_path,size,mtime_ns,sha256,records,updated_unix)
+                VALUES('1.0','fixture','fixture',1,1,'x',1,1)""")
+            connection.execute("""INSERT INTO symbols(
+                minecraft_version,namespace_from,namespace_to,kind,name_from,name_to,source_id)
+                VALUES('1.0','bad','official','class','a','b',?)""", (cursor.lastrowid,))
+            connection.commit()
+
+        errors = diagnostic(database)
+
+        self.assertIn("invalid namespaces", " ".join(errors))
 
     def test_removed_source_is_absent_from_new_database(self):
         first = builder.build_corpus(self.data, self.out)
