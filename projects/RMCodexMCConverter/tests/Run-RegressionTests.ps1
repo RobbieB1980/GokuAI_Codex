@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
@@ -66,6 +66,85 @@ try {
 finally {
     if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture -Recurse -Force }
 }
+
+# Solved-conversion contract: declared passes, rules, transforms, and overlay ordering must be live.
+$solvedIndex = Get-SolvedConversionIndex
+$solvedBase = [pscustomobject]@{
+    SchemaVersion=1; SourceVersion='1.21.4'; Loader='neoforge'; Framework='mcreator'; Confidence='high';
+    Route='neoforge-1.21.x'; RecommendedPasses=@(Get-RecommendedMigrationPasses -Route 'neoforge-1.21.x');
+    ApiFeatures=@(); Evidence=@()
+}
+$solvedProfile = Merge-SolvedConversionsIntoProfile -Profile $solvedBase -ModId 'thenewherobrinemod' -Index $solvedIndex
+Assert-True (@($solvedProfile.SolvedRules) -contains 'entity-render-state') 'NewHerobrine forceRules merged into profile'
+Assert-True (@($solvedProfile.SolvedTransforms) -contains 'custom-block-registration') 'NewHerobrine transforms merged into profile'
+Assert-True (@($solvedProfile.AppliedSolutions.Id) -contains 'CASE-007-new-herobrine-1.21.4') 'NewHerobrine solved case matched'
+$woodlandsBase = [pscustomobject]@{
+    SchemaVersion=1; SourceVersion='1.21.1'; Loader='neoforge'; Framework='mcreator'; Confidence='high';
+    Route='neoforge-1.21.x'; RecommendedPasses=@(Get-RecommendedMigrationPasses -Route 'neoforge-1.21.x');
+    ApiFeatures=@(); Evidence=@()
+}
+$woodlandsProfile = Merge-SolvedConversionsIntoProfile -Profile $woodlandsBase -ModId 'woodlands' -Index $solvedIndex
+Assert-True (@($woodlandsProfile.AppliedSolutions.Id) -contains 'CASE-008-woodlands-1.21.1') 'Woodlands solved case matched'
+Assert-True (Test-Path -LiteralPath (Join-Path $repo 'lib\overlays\woodlands\1.21.1.zip') -PathType Leaf) 'Woodlands verified overlay packaged'
+$woodlandsCase = @($solvedIndex.solutions | Where-Object id -eq 'CASE-008-woodlands-1.21.1')[0]
+Assert-True (@($woodlandsCase.overlays[0].deletePaths) -contains 'src/main/java/net/mcreator/woodlands/init/WoodlandsModTrades.java') 'Woodlands obsolete Java deletion declared'
+$overlayFixture = Join-Path ([IO.Path]::GetTempPath()) ('woodlands-overlay-test-' + [guid]::NewGuid().ToString('N'))
+try {
+    $required = Join-Path $overlayFixture 'src\main\java\net\mcreator\woodlands\WoodlandsMod.java'
+    $obsoleteTrade = Join-Path $overlayFixture 'src\main\java\net\mcreator\woodlands\init\WoodlandsModTrades.java'
+    $obsoleteDimension = Join-Path $overlayFixture 'src\main\java\net\mcreator\woodlands\world\dimension\WoodLandDimension.java'
+    New-Item -ItemType Directory -Path (Split-Path $required),(Split-Path $obsoleteTrade),(Split-Path $obsoleteDimension) -Force | Out-Null
+    Set-Content -LiteralPath $required -Value 'class WoodlandsMod {}'
+    Set-Content -LiteralPath $obsoleteTrade -Value 'class WoodlandsModTrades {}'
+    Set-Content -LiteralPath $obsoleteDimension -Value 'class WoodLandDimension {}'
+    $overlayResult = Apply-SolvedConversionOverlays -Root $overlayFixture -Profile $woodlandsProfile -ModId 'woodlands' -ToolRoot $repo -Index $solvedIndex
+    Assert-True (-not (Test-Path -LiteralPath $obsoleteTrade)) 'Woodlands overlay deletes obsolete trade subscriber'
+    Assert-True (-not (Test-Path -LiteralPath $obsoleteDimension)) 'Woodlands overlay deletes obsolete dimension effects class'
+    Assert-True (@($overlayResult.Overlays) -contains 'woodlands/1.21.1.zip') 'Woodlands overlay applied in deletion fixture'
+    $fortress = Get-Content -LiteralPath (Join-Path $overlayFixture 'src\main\resources\data\woodlands\worldgen\structure\ruined_fortress.json') -Raw | ConvertFrom-Json
+    $statue = Get-Content -LiteralPath (Join-Path $overlayFixture 'src\main\resources\data\woodlands\worldgen\structure\wooden_statue.json') -Raw | ConvertFrom-Json
+    Assert-Equal $fortress.project_start_to_heightmap 'WORLD_SURFACE_WG' 'Woodlands fortress projects to 26.2 world surface'
+    Assert-Equal $fortress.step 'raw_generation' 'Woodlands fortress uses verified generation phase'
+    Assert-Equal $statue.project_start_to_heightmap 'WORLD_SURFACE_WG' 'Woodlands statue projects to 26.2 world surface'
+    Assert-Equal $statue.step 'raw_generation' 'Woodlands statue uses verified generation phase'
+}
+finally {
+    if (Test-Path -LiteralPath $overlayFixture) { Remove-Item -LiteralPath $overlayFixture -Recurse -Force }
+}
+$worldgenFixture = Join-Path ([IO.Path]::GetTempPath()) ('worldgen-262-test-' + [guid]::NewGuid().ToString('N'))
+try {
+    $biomeDir = Join-Path $worldgenFixture 'src\main\resources\data\example\worldgen\biome'
+    $treeDir = Join-Path $worldgenFixture 'src\main\resources\data\example\worldgen\configured_feature'
+    $dimensionDir = Join-Path $worldgenFixture 'src\main\resources\data\example\dimension'
+    New-Item -ItemType Directory -Path $biomeDir,$treeDir,$dimensionDir -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $biomeDir 'test.json') -Value '{"carvers":{},"features":[]}'
+    Set-Content -LiteralPath (Join-Path $treeDir 'test.json') -Value '{"type":"minecraft:tree","config":{"dirt_provider":{"type":"minecraft:simple_state_provider","state":{"Name":"minecraft:oak_planks"}}}}'
+    Set-Content -LiteralPath (Join-Path $dimensionDir 'test.json') -Value '{"generator":{"settings":{"noise_router":{"barrier":0}}}}'
+    Assert-Equal (Invoke-Minecraft262WorldgenDataPass -Root $worldgenFixture) 3 'Woodlands worldgen codec fixture touched'
+    $biome = Get-Content -LiteralPath (Join-Path $biomeDir 'test.json') -Raw | ConvertFrom-Json
+    $tree = Get-Content -LiteralPath (Join-Path $treeDir 'test.json') -Raw | ConvertFrom-Json
+    $dimension = Get-Content -LiteralPath (Join-Path $dimensionDir 'test.json') -Raw | ConvertFrom-Json
+    Assert-Equal @($biome.carvers).Count 0 'empty biome carvers object becomes array'
+    Assert-Equal $tree.config.below_trunk_provider.type 'minecraft:rule_based_state_provider' 'tree below-trunk provider added'
+    Assert-Equal $tree.config.below_trunk_provider.rules[0].then.state.Name 'minecraft:oak_planks' 'tree custom dirt provider preserved'
+    Assert-True ($dimension.generator.settings.noise_router.PSObject.Properties.Name -contains 'preliminary_surface_level') 'noise-router preliminary surface level added'
+}
+finally {
+    if (Test-Path -LiteralPath $worldgenFixture) { Remove-Item -LiteralPath $worldgenFixture -Recurse -Force }
+}
+$knownTransforms = @('custom-block-registration','client-package-moves','cutout-render-type','submit-custom-geometry','fusion-official')
+$declaredTransforms = @($solvedIndex.solutions.transforms) + @($solvedIndex.bandDefaults.transforms) | Where-Object { $_ } | Select-Object -Unique
+foreach ($transform in $declaredTransforms) { Assert-True ($knownTransforms -contains $transform) "known solved transform $transform" }
+$knownRules = @(Get-PrimerMigrationRules -SourceVersion '1.20.1')
+$declaredRules = @($solvedIndex.solutions.forceRules) + @($solvedIndex.bandDefaults.forceRules) | Where-Object { $_ } | Select-Object -Unique
+foreach ($rule in $declaredRules) { Assert-True ($knownRules -contains $rule) "known solved rule $rule" }
+$converterText = Get-Content -LiteralPath (Join-Path $repo 'Convert-Forge1201-ToNeoForge262.ps1') -Raw
+Assert-True ($converterText.Contains("LivingEntity.getSlotForHand(context.getHand())', 'context.getHand()")) 'Woodlands InteractionHand repair hardened'
+Assert-True ($converterText.Contains("import net.minecraft.BlockUtil.FoundRectangle;', 'import net.minecraft.util.BlockUtil.FoundRectangle;")) 'Woodlands BlockUtil package repair hardened'
+Assert-True ($converterText -match 'Get-PrimerMigrationRules[^\r\n]+Profile\.SolvedRules') 'exact primer execution consumes SolvedRules'
+Assert-True ($converterText -match 'function Invoke-MinecraftEntitySubpackageRemapPass' -and $converterText.Contains('Invoke-MinecraftEntitySubpackageRemapPass -Root $Root')) 'client-package-moves dispatcher target exists'
+Assert-True ($converterText.IndexOf("Solved-conversion named transforms") -lt $converterText.IndexOf("Solved-conversion semantic overlays")) 'transforms execute before overlays'
+Assert-True ($converterText.IndexOf("Solved-conversion semantic overlays") -gt $converterText.IndexOf("Item-model-touched")) 'overlays are the final source/resource mutation'
 
 $sample = 'BLOCKS.register(name, block)'
 Assert-Equal (Convert-CustomBlockRegistrationText $sample) $sample 'unmatched block helper unchanged'

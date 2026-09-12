@@ -41,6 +41,7 @@
     <None Include="..\..\lib\primer_changes\**\*" Link="tools\lib\primer_changes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\dep_changes\**\*" Link="tools\lib\dep_changes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\overlays\**\*" Link="tools\lib\overlays\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\solved-problems\**\*" Link="tools\lib\solved-problems\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\client-items\**\*" Link="tools\lib\client-items\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

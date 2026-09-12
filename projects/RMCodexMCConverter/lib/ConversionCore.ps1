@@ -1,4 +1,4 @@
-function ConvertTo-NormalizedMinecraftVersion {
+﻿function ConvertTo-NormalizedMinecraftVersion {
     [CmdletBinding()]
     param([AllowEmptyString()][string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
@@ -416,6 +416,7 @@ function Merge-SolvedConversionsIntoProfile {
     $matched = @(Find-MatchingSolvedConversions -Profile $Profile -ModId $ModId -Index $Index)
     $passes = New-Object System.Collections.Generic.List[string]
     foreach ($p in @($Profile.RecommendedPasses)) { if ($p -and -not ($passes -contains $p)) { $passes.Add([string]$p) | Out-Null } }
+    $rules = New-Object System.Collections.Generic.List[string]
     $transforms = New-Object System.Collections.Generic.List[string]
     $applied = New-Object System.Collections.Generic.List[object]
     $stopMessage = $null
@@ -423,6 +424,9 @@ function Merge-SolvedConversionsIntoProfile {
     foreach ($m in $matched) {
         foreach ($p in @($m.forcePasses)) {
             if ($p -and -not ($passes -contains $p)) { $passes.Add([string]$p) | Out-Null }
+        }
+        foreach ($r in @($m.forceRules)) {
+            if ($r -and -not ($rules -contains $r)) { $rules.Add([string]$r) | Out-Null }
         }
         foreach ($t in @($m.transforms)) {
             if ($t -and -not ($transforms -contains $t)) { $transforms.Add([string]$t) | Out-Null }
@@ -448,6 +452,7 @@ function Merge-SolvedConversionsIntoProfile {
         RecommendedPasses = @($passes)
         ApiFeatures       = @($(if ($Profile.PSObject.Properties['ApiFeatures']) { $Profile.ApiFeatures } else { @() }))
         Evidence          = @($(if ($Profile.PSObject.Properties['Evidence']) { $Profile.Evidence } else { @() }))
+        SolvedRules       = @($rules)
         SolvedTransforms  = @($transforms)
         AppliedSolutions  = @($applied.ToArray())
     }
@@ -455,6 +460,62 @@ function Merge-SolvedConversionsIntoProfile {
         $out | Add-Member -NotePropertyName SolvedStopMessage -NotePropertyValue ([string]$stopMessage)
     }
     return $out
+}
+
+function Invoke-Minecraft262WorldgenDataPass {
+    <# Semantic 26.2 worldgen codec migrations proven by CASE-008 Woodlands. #>
+    param([Parameter(Mandatory)][string]$Root)
+
+    $dataRoot = Join-Path $Root 'src\main\resources\data'
+    if (-not (Test-Path -LiteralPath $dataRoot -PathType Container)) { return 0 }
+    $touched = 0
+    foreach ($file in @(Get-ChildItem -LiteralPath $dataRoot -Recurse -File -Filter '*.json' -ErrorAction SilentlyContinue)) {
+        $relative = $file.FullName.Substring($dataRoot.Length).TrimStart('\').Replace('\','/')
+        if ($relative -notmatch '/(?:dimension|worldgen/biome|worldgen/configured_feature)/') { continue }
+        try { $doc = [IO.File]::ReadAllText($file.FullName) | ConvertFrom-Json -ErrorAction Stop }
+        catch { continue }
+        $changed = $false
+
+        if ($relative -match '/worldgen/biome/' -and $doc.PSObject.Properties.Name -contains 'carvers') {
+            $carvers = $doc.carvers
+            if ($carvers -is [pscustomobject] -and @($carvers.PSObject.Properties).Count -eq 0) {
+                $doc.carvers = @()
+                $changed = $true
+            }
+        }
+
+        if ($relative -match '/worldgen/configured_feature/' -and $doc.type -eq 'minecraft:tree' -and $doc.config) {
+            if ($doc.config.PSObject.Properties.Name -notcontains 'below_trunk_provider') {
+                $replacement = if ($doc.config.dirt_provider) { $doc.config.dirt_provider } else {
+                    [pscustomobject][ordered]@{ type='minecraft:simple_state_provider'; state=[pscustomobject][ordered]@{ Name='minecraft:dirt' } }
+                }
+                $provider = [pscustomobject][ordered]@{
+                    type='minecraft:rule_based_state_provider'
+                    rules=@([pscustomobject][ordered]@{
+                        if_true=[pscustomobject][ordered]@{ type='minecraft:not'; predicate=[pscustomobject][ordered]@{ type='minecraft:matching_block_tag'; tag='minecraft:cannot_replace_below_tree_trunk' } }
+                        then=$replacement
+                    })
+                }
+                $doc.config | Add-Member -NotePropertyName below_trunk_provider -NotePropertyValue $provider
+                $changed = $true
+            }
+        }
+
+        if ($relative -match '/dimension/' -and $doc.generator.settings.noise_router) {
+            $router = $doc.generator.settings.noise_router
+            if ($router.PSObject.Properties.Name -notcontains 'preliminary_surface_level') {
+                $router | Add-Member -NotePropertyName preliminary_surface_level -NotePropertyValue 0.0
+                $changed = $true
+            }
+        }
+
+        if ($changed) {
+            $json = $doc | ConvertTo-Json -Depth 100
+            [IO.File]::WriteAllText($file.FullName, $json + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+            $touched++
+        }
+    }
+    return $touched
 }
 
 function Apply-SolvedConversionOverlays {
@@ -503,6 +564,20 @@ function Apply-SolvedConversionOverlays {
             }
 
             try {
+                # A proven overlay is a final-tree delta. Files removed from the
+                # proven conversion must also be removed from the decompiled base.
+                if ($ov.PSObject.Properties['deletePaths']) {
+                    foreach ($relDelValue in @($ov.deletePaths)) {
+                        $relDel = ([string]$relDelValue).Trim()
+                        if (-not $relDel) { continue }
+                        $target = Join-Path $Root ($relDel -replace '/', [IO.Path]::DirectorySeparatorChar)
+                        if (Test-Path -LiteralPath $target) {
+                            Remove-Item -LiteralPath $target -Force -ErrorAction Stop
+                            $touched++
+                        }
+                    }
+                }
+
                 $deleteList = Join-Path $overlayWork 'DELETE.txt'
                 if (Test-Path -LiteralPath $deleteList) {
                     foreach ($line in @(Get-Content -LiteralPath $deleteList -ErrorAction SilentlyContinue)) {
@@ -553,7 +628,9 @@ function Write-PrimerQuickReference {
         foreach ($change in @($step.changes)) { $lines.Add("- $change") | Out-Null }
         if (@($step.passes).Count -gt 0) { $lines.Add("- Converter passes: ``$(@($step.passes) -join '`, `')``") | Out-Null }
     }
-    [IO.File]::WriteAllText($Path, (($lines -join "`r`n") + "`r`n"))
+    [IO.File]::WriteAllText($Path, (($lines -join "
+") + "
+"))
     return $chain.Count
 }
 
@@ -929,7 +1006,8 @@ function Write-MigrationEvidencePacket {
     $jsonPath = Join-Path $OutputDirectory 'MIGRATION_EVIDENCE.json'
     $mdPath = Join-Path $OutputDirectory 'MIGRATION_EVIDENCE.md'
     $json = $packet | ConvertTo-Json -Depth 8
-    [IO.File]::WriteAllText($jsonPath, $json + "`r`n")
+    [IO.File]::WriteAllText($jsonPath, $json + "
+")
 
     $md = New-Object System.Collections.Generic.List[string]
     $md.Add('# Migration evidence packet') | Out-Null
@@ -973,7 +1051,9 @@ function Write-MigrationEvidencePacket {
     }
     $md.Add('') | Out-Null
     $md.Add('Machine-readable twin: `MIGRATION_EVIDENCE.json`.') | Out-Null
-    [IO.File]::WriteAllText($mdPath, (($md -join "`r`n") + "`r`n"))
+    [IO.File]::WriteAllText($mdPath, (($md -join "
+") + "
+"))
 
     return [pscustomobject]@{
         JsonPath     = $jsonPath
@@ -1249,12 +1329,16 @@ function Set-ProjectDestinationJavaHome {
         if ($text -match '(?m)^\s*org\.gradle\.java\.home\s*=') {
             $text = [regex]::Replace($text, '(?m)^\s*org\.gradle\.java\.home\s*=.*$', $line)
         } else {
-            if ($text.Length -gt 0 -and -not $text.EndsWith("`n")) { $text += "`r`n" }
-            $text += "$line`r`n"
+            if ($text.Length -gt 0 -and -not $text.EndsWith("`n")) { $text += "
+" }
+            $text += "$line
+"
         }
         [IO.File]::WriteAllText($propsPath, $text)
     } else {
-        [IO.File]::WriteAllText($propsPath, "# Destination JDK pin (NeoForge toolchain)`r`n$line`r`n")
+        [IO.File]::WriteAllText($propsPath, "# Destination JDK pin (NeoForge toolchain)
+$line
+")
     }
 
     return [pscustomobject]@{
@@ -1394,6 +1478,7 @@ function Write-GrokRepairPrompt {
     $body = Get-GrokRepairPromptBody -FailedOutput $FailedOutput -DestinationJavaMajor $DestinationJavaMajor -TargetMinecraft $TargetMinecraft
     $path = Join-Path $FailedOutput 'CODEX_REPAIR_REQUEST.md'
     $utf8 = New-Object System.Text.UTF8Encoding $false
-    [IO.File]::WriteAllText($path, $body.TrimEnd() + "`r`n", $utf8)
+    [IO.File]::WriteAllText($path, $body.TrimEnd() + "
+", $utf8)
     return $path
 }

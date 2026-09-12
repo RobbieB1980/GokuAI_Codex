@@ -20,6 +20,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if(-not $env:GRADLE_USER_HOME){$env:GRADLE_USER_HOME=Join-Path $env:USERPROFILE '.gradle'}
+if(-not(Test-Path -LiteralPath $env:GRADLE_USER_HOME -PathType Container)){throw 'Gradle user cache missing'}
 . (Join-Path $PSScriptRoot 'lib\ConversionCore.ps1')
 
 if (-not (Test-Path -LiteralPath $ProjectRoot)) {
@@ -27,6 +29,14 @@ if (-not (Test-Path -LiteralPath $ProjectRoot)) {
 }
 
 $result = Invoke-GradleBuildWithRequiredJava -ProjectRoot $ProjectRoot -Tasks $Tasks -LogFileName $LogFileName -FallbackJavaMajor $FallbackJavaMajor
+$transientJarLock = $result.ExitCode -ne 0 -and
+    (Test-Path -LiteralPath $result.LogPath -PathType Leaf) -and
+    (Select-String -LiteralPath $result.LogPath -Pattern 'AccessDeniedException: .*\\\.gradle\\caches\\.*\.jar' -Quiet)
+if ($transientJarLock) {
+    Write-Warning 'Transient Gradle cache JAR lock detected; retrying the same build once.'
+    Start-Sleep -Seconds 2
+    $result = Invoke-GradleBuildWithRequiredJava -ProjectRoot $ProjectRoot -Tasks $Tasks -LogFileName $LogFileName -FallbackJavaMajor $FallbackJavaMajor
+}
 Write-Host ("Destination JAVA_HOME={0} (Java {1}; required {2}+)" -f $result.JavaHome, $result.SelectedMajor, $result.RequiredMajor) -ForegroundColor Cyan
 Write-Host ("Gradle exit: {0}  log: {1}" -f $result.ExitCode, $result.LogPath)
 if ($result.ExitCode -eq 0) {
