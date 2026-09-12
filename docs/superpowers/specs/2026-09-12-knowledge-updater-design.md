@@ -19,7 +19,7 @@ The refresh covers:
 - the general full-text knowledge index
 - status, provenance, and validation reports
 
-Snapshots and dedicated-server artifacts remain explicit command-line options. Exact-version source trees already present under `Data/Exact_Version_Sources` are indexed and audited for freshness, but this first completed pipeline will not synthesize or switch their branches automatically; that requires a separate version-selection policy.
+Snapshots are included by default. Dedicated-server artifacts remain an explicit command-line option. Exact-version source trees already present under `Data/Exact_Version_Sources` are indexed and audited for freshness, but this first completed pipeline will not synthesize or switch their branches automatically; that requires a separate version-selection policy.
 
 ## Operator Interface
 
@@ -31,7 +31,7 @@ Create `Update-GokuKnowledge.ps1` at the repository root. Its default invocation
 
 Supported switches:
 
-- `-IncludeSnapshots`: include Mojang snapshots.
+- `-ReleaseOnly`: exclude Mojang snapshots.
 - `-IncludeServerArtifacts`: retain and index dedicated-server JARs and mappings.
 - `-SkipSourceUpdate`: rebuild derived data from current local sources without network access.
 - `-ReportPath <path>`: override the default timestamped report location under `logs/knowledge-update`.
@@ -125,8 +125,8 @@ A final offline integration test builds small fixture mapping and knowledge data
 Update `README.md` with:
 
 - the one-command refresh workflow
-- default client-only behavior
-- snapshot and server switches
+- default client-only, snapshots-enabled behavior
+- release-only and server switches
 - offline derived-index rebuild
 - report location and failure interpretation
 - a statement that no scheduled task is installed
