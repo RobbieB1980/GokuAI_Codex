@@ -82,6 +82,20 @@ def run(cmd: list[str], cwd: Path | None = None, quiet: bool = False) -> None:
         )
 
 
+def git_value(repo: Path, *args: str) -> str | None:
+    proc = subprocess.run(
+        ["git", "-c", "core.longpaths=true", "-c", f"safe.directory={repo}",
+         "-C", str(repo), *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    value = proc.stdout.strip()
+    return value if proc.returncode == 0 and value else None
+
+
 def fetch_json(url: str) -> dict[str, Any]:
     req = urllib.request.Request(url, headers={"User-Agent": "RBLocalLLM/1.2.22"})
     with urllib.request.urlopen(req, timeout=120) as r:
@@ -173,21 +187,38 @@ def version_in_range(v: str, low: str, high: str | None = None) -> bool:
     return True
 
 
-def update_git_repo(name: str, url: str, upstream: Path, quiet: bool) -> Path:
+def update_git_repo(name: str, url: str, upstream: Path, quiet: bool) -> dict[str, Any]:
     dst = upstream / name
-    if not dst.exists():
-        run(["git", "clone", "--filter=blob:none", url, str(dst)], quiet=quiet)
-    else:
-        try:
-            run(["git", "-C", str(dst), "fetch", "--all", "--prune"], quiet=quiet)
-            run(["git", "-C", str(dst), "pull", "--ff-only"], quiet=quiet)
-        except Exception:
-            # Keep the last known good checkout; surface warning but continue.
-            log(f"WARNING: Git update failed for {name}; retaining existing checkout.", quiet=False)
-    return dst
+    existed = dst.exists()
+    previous_commit = git_value(dst, "rev-parse", "HEAD") if existed else None
+    branch = git_value(dst, "branch", "--show-current") if existed else None
+    try:
+        if not existed:
+            run(["git", "-c", "core.longpaths=true", "clone", "--filter=blob:none", url, str(dst)], quiet=quiet)
+        else:
+            run(["git", "-c", "core.longpaths=true", "-C", str(dst),
+                 "fetch", "--all", "--prune"], quiet=quiet)
+            run(["git", "-c", "core.longpaths=true", "-C", str(dst),
+                 "pull", "--ff-only"], quiet=quiet)
+    except Exception as exc:
+        status = "retained_stale" if existed else "failed"
+        log(f"WARNING: Git update failed for {name}; status={status}.", quiet=False)
+        return {
+            "name": name, "url": url, "path": str(dst.resolve()), "status": status,
+            "branch": branch, "previous_commit": previous_commit,
+            "resulting_commit": git_value(dst, "rev-parse", "HEAD") if dst.exists() else None,
+            "error": str(exc),
+        }
+    resulting_commit = git_value(dst, "rev-parse", "HEAD")
+    return {
+        "name": name, "url": url, "path": str(dst.resolve()),
+        "status": "updated" if not existed or previous_commit != resulting_commit else "unchanged",
+        "branch": git_value(dst, "branch", "--show-current"),
+        "previous_commit": previous_commit, "resulting_commit": resulting_commit, "error": None,
+    }
 
 
-def write_json(path: Path, data: Any) -> bool:
+def atomic_write_json(path: Path, data: Any) -> bool:
     """Write JSON only when content changed so incremental indexing can trust mtime."""
     path.parent.mkdir(parents=True, exist_ok=True)
     rendered = json.dumps(data, indent=2, sort_keys=True)
@@ -196,8 +227,41 @@ def write_json(path: Path, data: Any) -> bool:
             return False
     except Exception:
         pass
-    path.write_text(rendered, encoding="utf-8")
+    part = path.with_suffix(path.suffix + ".part")
+    part.write_text(rendered, encoding="utf-8")
+    os.replace(part, path)
     return True
+
+
+write_json = atomic_write_json
+
+
+def should_include_snapshots(release_only: bool) -> bool:
+    return not release_only
+
+
+def select_mojang_versions(manifest: dict[str, Any], release_only: bool) -> list[dict[str, Any]]:
+    releases = [
+        version for version in manifest.get("versions", [])
+        if version.get("type") == "release" and version_in_range(version.get("id", ""), "1.12")
+    ]
+    if release_only:
+        return releases
+    latest_snapshot = manifest.get("latest", {}).get("snapshot")
+    snapshot = next((version for version in manifest.get("versions", [])
+                     if version.get("id") == latest_snapshot and version.get("type") != "release"), None)
+    return releases + ([snapshot] if snapshot else [])
+
+
+def mojang_download_targets(include_server_jar: bool) -> dict[str, str]:
+    targets = {
+        "client": "client.jar",
+        "client_mappings": "client_mappings.txt",
+        "server_mappings": "server_mappings.txt",
+    }
+    if include_server_jar:
+        targets["server"] = "server.jar"
+    return targets
 
 
 def _rmtree_onerror(func, path, exc_info):
@@ -318,8 +382,8 @@ def ensure_legacy_mcp_1122(mappings_root: Path, quiet: bool) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
-    ap.add_argument("--include-snapshots", action="store_true")
-    ap.add_argument("--include-server-artifacts", action="store_true", help="Also retain/download dedicated server JARs and Mojang server mappings")
+    ap.add_argument("--release-only", action="store_true", help="Exclude Mojang snapshots (snapshots are included by default)")
+    ap.add_argument("--include-server-jar", action="store_true", help="Also retain/download the dedicated server JAR (both mapping files are included by default)")
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--cleanup-only", action="store_true", help="Remove legacy generated mirrors without network access")
     args = ap.parse_args()
@@ -337,8 +401,8 @@ def main() -> int:
     verify_cache_path = upstream / "download_verify_cache.json"
     verify_cache = load_verify_cache(verify_cache_path)
 
-    cleanup = remove_generated_duplicate_mirrors(root, args.quiet)
     if args.cleanup_only:
+        cleanup = remove_generated_duplicate_mirrors(root, args.quiet)
         log(f"Legacy duplicate cleanup complete: {cleanup}", args.quiet)
         return 0
 
@@ -348,21 +412,24 @@ def main() -> int:
         log(f"WARNING: Unable to update legacy MCP 1.12.2 mapping CSVs: {e}", False)
 
     # Git working trees under _upstream are canonical. They are indexed directly.
+    repo_results: dict[str, dict[str, Any]] = {}
     checkouts: dict[str, Path] = {}
     for name, url in REPOS.items():
-        try:
-            checkouts[name] = update_git_repo(name, url, upstream, args.quiet)
-        except Exception as e:
-            log(f"WARNING: Unable to clone/update {name}: {e}", False)
+        result = update_git_repo(name, url, upstream, args.quiet)
+        repo_results[name] = result
+        path = Path(result["path"])
+        if path.is_dir():
+            checkouts[name] = path
 
     manifest = fetch_json(MOJANG_MANIFEST)
     write_json(upstream / "mojang_version_manifest_v2.json", manifest)
-    releases = [
-        v for v in manifest.get("versions", [])
-        if v.get("type") == "release" and version_in_range(v.get("id", ""), "1.12")
-    ]
-    snapshots = [v for v in manifest.get("versions", []) if v.get("type") != "release"] if args.include_snapshots else []
-    selected_versions = releases + snapshots
+    source_failed = any(r["status"] in {"failed", "retained_stale"} for r in repo_results.values())
+    cleanup = ({"reference_mirrors": 0, "primer_mirrors": 0, "mapping_mirrors": 0,
+                "completed_project_mirrors": 0}
+               if source_failed else remove_generated_duplicate_mirrors(root, args.quiet))
+    selected_versions = select_mojang_versions(manifest, args.release_only)
+    releases = [version for version in selected_versions if version.get("type") == "release"]
+    include_snapshots = should_include_snapshots(args.release_only)
 
     # Version-oriented primer folders are pointer metadata only; no source files are copied.
     primer_checkout = checkouts.get("neoforge_primers")
@@ -399,7 +466,7 @@ def main() -> int:
         vid = entry.get("id")
         if not vid:
             continue
-        if entry.get("type") != "release" and not args.include_snapshots:
+        if entry.get("type") != "release" and not include_snapshots:
             continue
         if entry.get("type") == "release" and not version_in_range(vid, "1.12"):
             continue
@@ -432,30 +499,21 @@ def main() -> int:
         })
 
         downloads = meta.get("downloads", {})
-        # v1.2.22 defaults to a client-focused corpus.  The Minecraft client JAR
-        # already carries the common/runtime code needed for client-side modding,
-        # while dedicated-server artifacts add a large, overlapping mapping set.
-        # Server artifacts remain an explicit opt-in for users who build dedicated
-        # server mods or need server-only classes.
-        targets = {
-            "client": "client.jar",
-            "client_mappings": "client_mappings.txt",
-        }
-        if args.include_server_artifacts:
-            targets.update({
-                "server": "server.jar",
-                "server_mappings": "server_mappings.txt",
-            })
-        else:
-            for obsolete_name in ("server.jar", "server_mappings.txt"):
-                obsolete = vdir / obsolete_name
-                if obsolete.exists():
-                    try:
-                        obsolete.unlink()
-                        verify_cache.pop(str(obsolete.resolve()), None)
-                        log(f"Pruned client-only unused artifact: {obsolete}", args.quiet)
-                    except PermissionError:
-                        log(f"WARNING: Could not prune locked server artifact: {obsolete}", False)
+        # The Minecraft client JAR carries the common/runtime code needed for
+        # client-side modding, while the dedicated-server JAR is large and mostly
+        # overlapping. Both compact official mapping files remain useful.
+        # Both mapping files are retained by default. The much larger dedicated
+        # server JAR remains opt-in for server-only bytecode inspection.
+        targets = mojang_download_targets(args.include_server_jar)
+        if not args.include_server_jar:
+            obsolete = vdir / "server.jar"
+            if obsolete.exists():
+                try:
+                    obsolete.unlink()
+                    verify_cache.pop(str(obsolete.resolve()), None)
+                    log(f"Pruned optional server JAR: {obsolete}", args.quiet)
+                except PermissionError:
+                    log(f"WARNING: Could not prune locked server artifact: {obsolete}", False)
 
         for key, filename in targets.items():
             d = downloads.get(key)
@@ -476,11 +534,11 @@ def main() -> int:
                 "mcpconfig": mcp_path is not None,
                 "mcpconfig_canonical_path": str(mcp_path) if mcp_path else None,
                 "mcpconfig_indexed_in_place": mcp_path is not None,
-                "mojang_mappings": (vdir / "client_mappings.txt").exists() or (args.include_server_artifacts and (vdir / "server_mappings.txt").exists()),
+                "mojang_mappings": (vdir / "client_mappings.txt").exists() and (vdir / "server_mappings.txt").exists(),
                 "mojang_canonical_root": str(vdir.resolve()),
                 "mojang_client_mappings": str((vdir / "client_mappings.txt").resolve()) if (vdir / "client_mappings.txt").exists() else None,
-                "mojang_server_mappings": str((vdir / "server_mappings.txt").resolve()) if args.include_server_artifacts and (vdir / "server_mappings.txt").exists() else None,
-                "mapping_profile": "client+server" if args.include_server_artifacts else "client-only",
+                "mojang_server_mappings": str((vdir / "server_mappings.txt").resolve()) if (vdir / "server_mappings.txt").exists() else None,
+                "mapping_profile": "client+server",
                 "mojang_mapping_copy_count": 1,
             }
             write_json(mdir / "_STATUS.json", status)
@@ -516,11 +574,13 @@ def main() -> int:
         "zero_copy": True,
         "latest_release": manifest.get("latest", {}).get("release"),
         "latest_snapshot": manifest.get("latest", {}).get("snapshot"),
-        "include_snapshots": bool(args.include_snapshots),
-        "mapping_profile": "client+server" if args.include_server_artifacts else "client-only",
-        "include_server_artifacts": bool(args.include_server_artifacts),
+        "status": "failed" if source_failed else "success",
+        "include_snapshots": include_snapshots,
+        "mapping_profile": "client+server",
+        "include_server_jar": bool(args.include_server_jar),
         "repositories": REPOS,
         "repository_paths": repo_paths,
+        "repository_results": repo_results,
         "repository_policy": "knowledge/_upstream working trees are canonical and indexed directly; generated mirrors are not created",
         "primer_root": str(primers_root),
         "mapping_root": str(mappings_root),
@@ -528,6 +588,9 @@ def main() -> int:
         "mojang_mapping_policy": "single canonical copy under Minecraft_Java_Server_Client/<version>",
         "legacy_duplicate_cleanup": cleanup,
     })
+    if source_failed:
+        log("Knowledge source update completed with stale or failed repositories.", False)
+        return 1
     log("Knowledge source update complete (zero-copy mode).", args.quiet)
     return 0
 

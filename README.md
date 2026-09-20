@@ -37,6 +37,26 @@ attention, and llama.cpp `ngram-cache` speculative decoding.
 .\Stop-GokuBackend.ps1
 ```
 
+## Refresh Minecraft knowledge
+
+Run the complete source, mapping, search-index, and validation pipeline manually:
+
+```powershell
+.\Update-GokuKnowledge.ps1
+```
+
+The default refresh includes Mojang releases and snapshots, downloads both client and server mapping files, retains the client JAR, and leaves the larger dedicated-server JAR excluded. Upstream Git repositories and verified Mojang files update incrementally; derived databases switch through validated active pointers so the last known-good databases remain available after a failure.
+
+Options:
+
+```powershell
+.\Update-GokuKnowledge.ps1 -ReleaseOnly        # exclude snapshots
+.\Update-GokuKnowledge.ps1 -IncludeServerJar  # also retain the dedicated-server JAR
+.\Update-GokuKnowledge.ps1 -SkipSourceUpdate  # rebuild indexes from current local sources
+```
+
+Each run writes a JSON report under `logs\knowledge-update`. A failed required stage returns a non-zero exit code and the report identifies the failing stage and retained active databases. The updater does not create or modify a Windows scheduled task.
+
 
 ## RMCodexMCConverter
 
