@@ -1,0 +1,4 @@
+interface:
+  display_name: "Legacy Java Converter vNext"
+  short_description: "Orchestrate faithful NeoForge 26.2 conversions"
+  default_prompt: "Use $legacy-java-converter-vnext to orchestrate this NeoForge 26.2 conversion or failed repair."

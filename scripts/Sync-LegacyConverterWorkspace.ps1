@@ -30,7 +30,18 @@ function Copy-Native([string]$Relative) {
 Copy-Native 'AGENTS.md'
 Copy-Native '.agents'
 Copy-Native '.codex'
-if (-not $SkillsOnly) { Copy-Native 'tools' }
+if (-not $SkillsOnly) {
+    # Keep converter build tools (for example Build-AstWorker.ps1) in the
+    # project root. Native helper tools belong inside the packaged overlay.
+    $nativeToolsSource = Join-Path $overlay 'tools'
+    $nativeToolsDestination = Join-Path $target 'gokuai-workspace-overlay\tools'
+    if (-not (Test-Path -LiteralPath $nativeToolsSource -PathType Container)) {
+        throw "Native overlay tools missing: $nativeToolsSource"
+    }
+    New-Item -ItemType Directory -Path $nativeToolsDestination -Force | Out-Null
+    & robocopy.exe $nativeToolsSource $nativeToolsDestination /E /PURGE /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+    if ($LASTEXITCODE -gt 7) { throw "robocopy failed for native overlay tools: $LASTEXITCODE" }
+}
 
 $required = @('AGENTS.md','.agents\skills','.codex\config.toml')
 $missing = @($required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $target $_)) })
