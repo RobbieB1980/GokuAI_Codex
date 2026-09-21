@@ -1,0 +1,11 @@
+RMCodexMCConverter 2.10.14 - 2026-09-12
+
+Resource-only datapack and repair-handoff hardening:
+
+- Class-free Modrinth wrapper JARs now follow an explicit datapack conversion route.
+- Universal wrapper metadata prefers NeoForge and supports single-quoted inline TOML fields.
+- Datapacks emit a NeoForge 26.2 lowcodefml wrapper with showAsDataPack=true and pack format 107.
+- Fabric/Quilt descriptors are removed from the NeoForge target.
+- Asset recovery no longer imports resources from arbitrary sibling JARs.
+- Partial conversion failures offer KAT repair even before a full scaffold exists.
+- Verified against Wild Animals 1.5 with a clean Gradle build and no foreign assets.

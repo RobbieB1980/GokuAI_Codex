@@ -1,0 +1,22 @@
+﻿[
+    {
+        "model":  "omnicoder-9b-q8_0",
+        "startup":  "ok",
+        "startup_seconds":  6.57,
+        "pid":  18648,
+        "gpu_used_mib":  11076,
+        "report":  "C:\\GokuCodexAI\\benchmarks\\small-gguf-b11057-retest-20260920-123238\\omnicoder-9b-q8_0.stage3.json",
+        "benchmark_exit":  0,
+        "elapsed_seconds":  178.82
+    },
+    {
+        "model":  "deepseek-r1-distill-qwen-14b-q6k",
+        "startup":  "ok",
+        "startup_seconds":  8.55,
+        "pid":  31768,
+        "gpu_used_mib":  16611,
+        "report":  "C:\\GokuCodexAI\\benchmarks\\small-gguf-b11057-retest-20260920-123238\\deepseek-r1-distill-qwen-14b-q6k.stage3.json",
+        "benchmark_exit":  0,
+        "elapsed_seconds":  240.43
+    }
+]

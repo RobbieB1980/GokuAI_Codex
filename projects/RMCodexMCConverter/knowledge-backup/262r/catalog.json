@@ -1,0 +1,413 @@
+﻿{
+    "schema":  1,
+    "id":  "262r",
+    "title":  "NeoForge 26.2 compile/runtime repair knowledge",
+    "category":  "262r",
+    "version":  "26.2",
+    "updated":  "2026-09-05",
+    "index":  "INDEX.md",
+    "pipeline":  "pipeline.md",
+    "remaps":  "remaps.md",
+    "crashes":  "crashes.md",
+    "do_not":  "do-not.md",
+    "converter_dir":  "converter",
+    "shards_dir":  "shards",
+    "passes":  {
+                   "262-repair":  "Invoke-Minecraft262CompileRepairPass",
+                   "gamerules-deferred":  "Invoke-Minecraft262CustomGameRuleDeferredRegister",
+                   "block-item-id":  "Invoke-BlockItemIdPass",
+                   "convention-tags":  "Invoke-ForgeConventionTagRewritePass",
+                   "item-models":  "Invoke-Minecraft262ItemModelPass",
+                   "dual-deps":  "Resolve-AndAcquireDependencies",
+                   "soft-dep-exclude":  "Invoke-OptionalIntegrationExcludePass"
+               },
+    "converter":  [
+                      {
+                          "id":  "mc-262r-dep-dual-pull",
+                          "file":  "converter/dual-deps.md",
+                          "summary":  "Pull source-version + 26.2 Modrinth jars (libs-source + libs)"
+                      },
+                      {
+                          "id":  "mc-262r-dep-source-version",
+                          "file":  "converter/dual-deps.md",
+                          "summary":  "Convert fallback uses detected SourceMinecraftVersion, not hardcoded 1.20.1"
+                      },
+                      {
+                          "id":  "mc-262r-dep-import-detect",
+                          "file":  "converter/import-detect.md",
+                          "summary":  "Import scan SimpleMatch without regex Escape"
+                      },
+                      {
+                          "id":  "mc-262r-soft-dep-exclude",
+                          "file":  "converter/soft-dep-exclude.md",
+                          "summary":  "Exclude soft integrations only when libs/ has no matching jar"
+                      },
+                      {
+                          "id":  "mc-262r-soft-dep-keep-when-jar",
+                          "file":  "converter/soft-dep-exclude.md",
+                          "summary":  "Keep compat/jei when jei-26.2 jar present"
+                      },
+                      {
+                          "id":  "mc-262r-fix-in-grok-promptfile",
+                          "file":  "converter/fix-in-grok.md",
+                          "summary":  "Start-GokuAI PromptFile single-line pointer; no multiline bat"
+                      },
+                      {
+                          "id":  "mc-262r-fix-in-grok-path",
+                          "file":  "converter/fix-in-grok.md",
+                          "summary":  "GROK_REPAIR_PROMPT.md must name FAILED OUTPUT FOLDER"
+                      },
+                      {
+                          "id":  "mc-262r-itemhandler-block-stub",
+                          "file":  "converter/capability-stub.md",
+                          "summary":  "Multiline ItemHandler.BLOCK registerBlockEntity stub; no orphan );"
+                      },
+                      {
+                          "id":  "mc-262r-destination-java",
+                          "file":  "converter/destination-java.md",
+                          "summary":  "Installer -Compile always uses destination JDK 25; org.gradle.java.home pin"
+                      }
+                  ],
+    "shards":  [
+                   {
+                       "id":  "mc-262r-feline-minecart-packages",
+                       "file":  "shards/feline-minecart-packages.md",
+                       "summary":  "FelineModel→Adult/Baby/Abstract split; minecart/boat packages; mixin slash descriptors + this instanceof"
+                   },
+                   {
+                       "id":  "mc-262r-value-io-be",
+                       "file":  "shards/value-io.md",
+                       "summary":  "BlockEntity save/load ValueInput/Output"
+                   },
+                   {
+                       "id":  "mc-262r-value-io-entity-load",
+                       "file":  "shards/value-io.md",
+                       "summary":  "Entity.load(TagValueInput); not protected readAdditionalSaveData"
+                   },
+                   {
+                       "id":  "mc-262r-map-entry-getkey",
+                       "file":  "shards/map-entry-accessors.md",
+                       "summary":  "Map.Entry property/value â†’ getKey/getValue"
+                   },
+                   {
+                       "id":  "mc-262r-entitytype-bystring",
+                       "file":  "shards/entity-type-lookup.md",
+                       "summary":  "EntityType.byString â†’ BuiltInRegistries.ENTITY_TYPE.getOptional"
+                   },
+                   {
+                       "id":  "mc-262r-flying-mob-removed",
+                       "file":  "shards/flying-mob-removed.md",
+                       "summary":  "FlyingMob/FlyingAnimal removed; use Ghast/Phantom/Bee.isFlying"
+                   },
+                   {
+                       "id":  "mc-262r-ber-render-state",
+                       "file":  "shards/block-entity-render-state.md",
+                       "summary":  "BlockEntityRenderer\u003cT,S\u003e create/extract/submit"
+                   },
+                   {
+                       "id":  "mc-262r-tooltip-consumer",
+                       "file":  "shards/tooltip-consumer.md",
+                       "summary":  "appendHoverText Consumer.accept; GuiGraphicsExtractor setTooltip*"
+                   },
+                   {
+                       "id":  "mc-262r-customdata-copytag",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "CustomData.getUnsafe â†’ copyTag"
+                   },
+                   {
+                       "id":  "mc-262r-compound-getstring-or",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "CompoundTag.getString â†’ getStringOr for String assign"
+                   },
+                   {
+                       "id":  "mc-262r-resourcekey-identifier",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "ResourceKey.location â†’ identifier"
+                   },
+                   {
+                       "id":  "mc-262r-spawnegg-gettype",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "SpawnEggItem.getType(ItemStack) static"
+                   },
+                   {
+                       "id":  "mc-262r-oncraftedby",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "onCraftedBy(stack, Player)"
+                   },
+                   {
+                       "id":  "mc-262r-hurtandbreak-hand",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "hurtAndBreak(n, living, InteractionHand)"
+                   },
+                   {
+                       "id":  "mc-262r-villagerdata-type",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "VillagerData.type()/profession() Holders + ResourceKey compare"
+                   },
+                   {
+                       "id":  "mc-262r-cat-frog-variants",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "CatVariants / FrogVariants ResourceKeys"
+                   },
+                   {
+                       "id":  "mc-262r-cubemob-package",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "Slime/MagmaCube â†’ monster.cubemob"
+                   },
+                   {
+                       "id":  "mc-262r-select-item-valuecodec",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "SelectItemModelProperty\u003cT\u003e + valueCodec"
+                   },
+                   {
+                       "id":  "mc-262r-datacomponent-builder-generic",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "DataComponentType.\u003cT\u003ebuilder()"
+                   },
+                   {
+                       "id":  "mc-262r-screen-extract",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "Screen extractBackground / extractRenderState"
+                   },
+                   {
+                       "id":  "mc-262r-serverplayer-level",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "serverPlayer.serverLevel â†’ level()"
+                   },
+                   {
+                       "id":  "mc-262r-mod-version-placeholder",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "Strip ${file.jarVersion} from mod_version"
+                   },
+                   {
+                       "id":  "mc-262r-advancements-stoplistening",
+                       "file":  "shards/misc-26.2-leaf.md",
+                       "summary":  "Remove PlayerAdvancements.stopListening"
+                   },
+                   {
+                       "id":  "mc-262r-itemstack-components-bound",
+                       "file":  "shards/itemstack-components-bound.md",
+                       "summary":  "No ItemStack in static/FMLClientSetup; string defaults + lazy ensureRegistered"
+                   },
+                   {
+                       "id":  "mc-262r-gui-preview-entity-id",
+                       "file":  "crashes.md",
+                       "summary":  "GUI preview Entity.setId before InventoryScreen extract; INVALID_ENTITY_ID=0 throws"
+                   },
+                   {
+                       "summary":  "Launcher.INSTANCE VERSION probe → FMLLoader.isProduction",
+                       "id":  "mc-262r-modlauncher-fmlloader",
+                       "file":  "shards/misc-26.2-leaf.md"
+                   },
+                   {
+                       "summary":  "Skip/collapse duplicate Item.Properties constructors",
+                       "id":  "mc-262r-item-props-ctor-dedupe",
+                       "file":  "shards/misc-26.2-leaf.md"
+                   },
+                   {
+                       "summary":  "Always exclude **/gametest/** in build.gradle",
+                       "id":  "mc-262r-gametest-always-exclude",
+                       "file":  "converter/soft-dep-exclude.md"
+                   }
+               ],
+    "changes":  [
+                    {
+                        "id":  "mc-262r-fog-package",
+                        "kind":  "renamed",
+                        "pass":  "262-repair",
+                        "summary":  "FogRenderer â†’ net.minecraft.client.renderer.fog.FogRenderer"
+                    },
+                    {
+                        "id":  "mc-262r-interaction-result",
+                        "kind":  "renamed",
+                        "pass":  "262-repair",
+                        "summary":  "InteractionResult import; InteractionResultHolder\u003cItemStack\u003e â†’ InteractionResult"
+                    },
+                    {
+                        "id":  "mc-262r-sound-getvalue",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "BuiltInRegistries.SOUND_EVENT.get â†’ getValue"
+                    },
+                    {
+                        "id":  "mc-262r-spawn-egg-item",
+                        "kind":  "replaced_by",
+                        "pass":  "262-repair",
+                        "summary":  "DeferredSpawnEggItem â†’ SpawnEggItem(properties.spawnEgg(type.get()))"
+                    },
+                    {
+                        "id":  "mc-262r-fluid-capability",
+                        "kind":  "replaced_by",
+                        "pass":  "262-repair",
+                        "summary":  "Capabilities.FluidHandler â†’ Capabilities.Fluid.ITEM; stub FluidBucketWrapper registerCapabilities"
+                    },
+                    {
+                        "id":  "mc-262r-fog-data",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "FogShape/FogMode modifyFog* â†’ FogData / FogEnvironment / Vector4f"
+                    },
+                    {
+                        "id":  "mc-262r-toolmaterial",
+                        "kind":  "replaced_by",
+                        "pass":  "262-repair",
+                        "summary":  "Tier anonymous class â†’ ToolMaterial + Properties.sword"
+                    },
+                    {
+                        "id":  "mc-262r-armor-record",
+                        "kind":  "removed",
+                        "pass":  "262-repair",
+                        "summary":  "No Registries.ARMOR_MATERIAL; static 8-arg ArmorMaterial + humanoidArmor"
+                    },
+                    {
+                        "id":  "mc-262r-item-extensions-stub",
+                        "kind":  "removed",
+                        "pass":  "262-repair",
+                        "summary":  "Ungated brace-depth stub of registerItemExtensions (HumanoidModel.crouching/riding/young gone)"
+                    },
+                    {
+                        "id":  "mc-262r-hierarchical-model",
+                        "kind":  "removed",
+                        "pass":  "262-repair",
+                        "summary":  "Strip HierarchicalModel animator; keep base model"
+                    },
+                    {
+                        "id":  "mc-262r-rendertobuffer-final",
+                        "kind":  "removed",
+                        "pass":  "262-repair",
+                        "summary":  "Drop Model.renderToBuffer overrides (final in 26.2)"
+                    },
+                    {
+                        "id":  "mc-262r-create-render-state",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "MobRenderer/EntityRenderer need createRenderState()"
+                    },
+                    {
+                        "id":  "mc-262r-boss-uuid",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "ServerBossEvent UUID first argument"
+                    },
+                    {
+                        "id":  "mc-262r-ai-step-level",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "customServerAiStep(ServerLevel)"
+                    },
+                    {
+                        "id":  "mc-262r-arrow-inground",
+                        "kind":  "renamed",
+                        "pass":  "262-repair",
+                        "summary":  "AbstractArrow.inGround â†’ isInGround(); Builder.\u003cAcidEntity\u003eof"
+                    },
+                    {
+                        "id":  "mc-262r-submit-projectile",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "Projectile EntityRenderer.render â†’ submit/extractRenderState (ArrowRenderer)"
+                    },
+                    {
+                        "id":  "mc-262r-effect-tick-level",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "applyEffectTick(ServerLevel, LivingEntity, int); strip renderInventoryText"
+                    },
+                    {
+                        "id":  "mc-262r-potion-named",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "new Potion(String name, MobEffectInstance...)"
+                    },
+                    {
+                        "id":  "mc-262r-entity-type-tag",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "getType().is(TagKey) â†’ builtInRegistryHolder().is"
+                    },
+                    {
+                        "id":  "mc-262r-thrown-splash",
+                        "kind":  "replaced_by",
+                        "pass":  "262-repair",
+                        "summary":  "AbstractThrownPotion â†’ ThrownSplashPotion / SPLASH_POTION"
+                    },
+                    {
+                        "id":  "mc-262r-gamerules-serverlevel",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "Spawn GameRules via ServerLevel.getGameRules()"
+                    },
+                    {
+                        "id":  "mc-262r-gamerules-deferred",
+                        "kind":  "replaced_by",
+                        "pass":  "gamerules-deferred",
+                        "summary":  "DeferredRegister(Registries.GAME_RULE)+new GameRule\u003c\u003e(); never static registerBoolean"
+                    },
+                    {
+                        "id":  "mc-262r-mobeffects-rename",
+                        "kind":  "renamed",
+                        "pass":  "262-repair",
+                        "summary":  "MOVEMENT_SLOWDOWNâ†’SLOWNESS, JUMPâ†’JUMP_BOOST"
+                    },
+                    {
+                        "id":  "mc-262r-tempt-range",
+                        "kind":  "runtime",
+                        "pass":  "262-repair",
+                        "summary":  "TemptGoal requires Attributes.TEMPT_RANGE (Mob.createMobAttributes omits it; default 10)"
+                    },
+                    {
+                        "id":  "mc-262r-block-item-id",
+                        "kind":  "runtime",
+                        "pass":  "block-item-id",
+                        "summary":  "Properties.setId via registerBlock/registerItem; multiline super + Outer.Inner::new"
+                    },
+                    {
+                        "id":  "mc-262r-convention-tags",
+                        "kind":  "runtime",
+                        "pass":  "convention-tags",
+                        "summary":  "#forge: â†’ #c: (Tags.Biomes.IS_CAVE is c:is_cave)"
+                    },
+                    {
+                        "id":  "mc-262r-template-spawn-egg",
+                        "kind":  "removed",
+                        "pass":  "item-models",
+                        "summary":  "minecraft:item/template_spawn_egg gone; restore two-layer template in mod namespace"
+                    },
+                    {
+                        "id":  "mc-262r-dep-dual-pull",
+                        "kind":  "pipeline",
+                        "pass":  "dual-deps",
+                        "summary":  "Source + 26.2 Modrinth dual pull"
+                    },
+                    {
+                        "id":  "mc-262r-value-io-be",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "BlockEntity ValueInput/Output"
+                    },
+                    {
+                        "id":  "mc-262r-ber-render-state",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "BlockEntityRenderer two type args + submit"
+                    },
+                    {
+                        "id":  "mc-262r-flying-mob-removed",
+                        "kind":  "removed",
+                        "pass":  "262-repair",
+                        "summary":  "FlyingMob/FlyingAnimal removed"
+                    },
+                    {
+                        "id":  "mc-262r-entitytype-bystring",
+                        "kind":  "replaced_by",
+                        "pass":  "262-repair",
+                        "summary":  "EntityType.byString â†’ BuiltInRegistries.getOptional"
+                    },
+                    {
+                        "id":  "mc-262r-tooltip-consumer",
+                        "kind":  "signature_changed",
+                        "pass":  "262-repair",
+                        "summary":  "appendHoverText Consumer.accept"
+                    }
+                ]
+}

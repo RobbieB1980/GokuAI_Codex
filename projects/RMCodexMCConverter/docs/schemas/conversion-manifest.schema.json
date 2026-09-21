@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://legacyjavaconverter.local/schemas/conversion-manifest-v2.json",
+  "title": "LegacyJavaConverter conversion manifest",
+  "type": "object",
+  "required": ["schemaVersion", "status", "run", "input", "target", "converter", "rules", "validation", "preservation"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "status": { "enum": ["complete", "repair_required", "not_tested"] },
+    "run": { "type": "object", "required": ["createdUtc"], "properties": { "createdUtc": { "type": "string", "format": "date-time" } } },
+    "input": {
+      "type": "object", "required": ["path", "kind", "files"],
+      "properties": {
+        "path": { "type": "string" }, "kind": { "enum": ["file", "directory"] },
+        "files": { "type": "array", "items": { "type": "object", "required": ["path", "sha256", "size"], "properties": { "path": { "type": "string" }, "sha256": { "type": "string", "pattern": "^[A-F0-9]{64}$" }, "size": { "type": "integer", "minimum": 0 } } } }
+      }
+    },
+    "target": { "type": "object", "required": ["minecraft", "neoforge"], "properties": { "minecraft": { "const": "26.2" }, "neoforge": { "type": "string" } } },
+    "converter": { "type": "object", "required": ["version"], "properties": { "version": { "type": "string" } } },
+    "rules": { "type": "array", "items": { "type": "object", "required": ["id", "files", "evidence"], "properties": { "id": { "type": "string", "minLength": 1 }, "files": { "type": "array", "items": { "type": "string" } }, "evidence": { "type": "string" } } } },
+    "validation": {
+      "type": "object",
+      "required": ["intake", "deterministic", "javaParsed", "built", "clientBooted", "worldLoaded", "contentSmokeTested", "build", "launch", "registryData", "content", "behavior"],
+      "properties": {
+        "build": { "$ref": "#/$defs/gate" }, "launch": { "$ref": "#/$defs/gate" }, "registryData": { "$ref": "#/$defs/gate" }, "content": { "$ref": "#/$defs/gate" }, "behavior": { "$ref": "#/$defs/gate" }
+      },
+      "additionalProperties": { "type": "object" }
+    },
+    "preservation": {
+      "type": "object", "required": ["assets", "models", "items", "entities", "aiBehavior"],
+      "properties": { "assets": { "$ref": "#/$defs/preservation" }, "models": { "$ref": "#/$defs/preservation" }, "items": { "$ref": "#/$defs/preservation" }, "entities": { "$ref": "#/$defs/preservation" }, "aiBehavior": { "$ref": "#/$defs/preservation" } }
+    }
+  },
+  "$defs": {
+    "gate": { "type": "object", "required": ["status", "evidence", "notes"], "properties": { "status": { "enum": ["passed", "failed", "not_tested", "not_applicable"] }, "evidence": { "type": "array", "items": { "type": "string" } }, "notes": { "type": "array", "items": { "type": "string" } } } },
+    "preservation": { "type": "object", "required": ["sourceCount", "destinationCount", "missingEntries", "evidencePaths"], "properties": { "sourceCount": { "type": "integer", "minimum": 0 }, "destinationCount": { "type": "integer", "minimum": 0 }, "missingEntries": { "type": "array", "items": { "type": "string" } }, "evidencePaths": { "type": "array", "items": { "type": "string" } } } }
+  }
+}

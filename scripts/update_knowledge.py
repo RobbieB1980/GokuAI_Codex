@@ -33,7 +33,7 @@ REPOS = {
 }
 
 TEXT_STATUS = {
-    "source": "RBLocalLLM updater",
+    "source": "GokuCodexAI knowledge updater",
     "generated": True,
     "zero_copy": True,
 }
@@ -97,7 +97,7 @@ def git_value(repo: Path, *args: str) -> str | None:
 
 
 def fetch_json(url: str) -> dict[str, Any]:
-    req = urllib.request.Request(url, headers={"User-Agent": "RBLocalLLM/1.2.22"})
+    req = urllib.request.Request(url, headers={"User-Agent": "GokuCodexAI/3.0.0"})
     with urllib.request.urlopen(req, timeout=120) as r:
         return json.load(r)
 
@@ -154,7 +154,7 @@ def download_verified(url: str, dest: Path, sha1: str | None, size: int | None, 
     tmp = dest.with_suffix(dest.suffix + ".part")
     if tmp.exists(): tmp.unlink()
     log(f"Downloading {url} -> {dest}", quiet)
-    req = urllib.request.Request(url, headers={"User-Agent": "RBLocalLLM/1.2.22"})
+    req = urllib.request.Request(url, headers={"User-Agent": "GokuCodexAI/3.0.0"})
     with urllib.request.urlopen(req, timeout=300) as r, tmp.open("wb") as out:
         shutil.copyfileobj(r, out, length=1024 * 1024)
     if size is not None and tmp.stat().st_size != size:
@@ -287,7 +287,7 @@ def is_generated_status(folder: Path) -> bool:
         data = json.loads(status.read_text(encoding="utf-8-sig"))
     except Exception:
         return False
-    return data.get("source") == "RBLocalLLM updater" and bool(data.get("generated"))
+    return data.get("source") == "GokuCodexAI knowledge updater" and bool(data.get("generated"))
 
 
 def prune_empty_parents(path: Path, stop: Path) -> None:
@@ -302,7 +302,7 @@ def prune_empty_parents(path: Path, stop: Path) -> None:
 
 
 def remove_generated_duplicate_mirrors(root: Path, quiet: bool) -> dict[str, int]:
-    """Remove only mirrors created by older RBLocalLLM updater/installer versions."""
+    """Remove only mirrors created by older knowledge updater versions."""
     removed = {"reference_mirrors": 0, "primer_mirrors": 0, "mapping_mirrors": 0, "completed_project_mirrors": 0}
 
     for rel in LEGACY_REFERENCE_MIRRORS:
@@ -312,7 +312,7 @@ def remove_generated_duplicate_mirrors(root: Path, quiet: bool) -> dict[str, int
             removed["reference_mirrors"] += 1
             prune_empty_parents(target.parent, root)
 
-    # v1.2.13 imported H:\GrokBuild_MF\Completed_Projects into this exact path.
+    # Older installations imported an external completed-project mirror here.
     legacy_completed = root / "Gradle_Workspaces" / "Completed_Projects"
     if legacy_completed.exists():
         remove_tree(legacy_completed, quiet, "completed-project copy")
@@ -356,7 +356,7 @@ def ensure_legacy_mcp_1122(mappings_root: Path, quiet: bool) -> None:
     archive = dest / "mcp_stable-39-1.12.zip"
     if not archive.exists():
         log(f"Downloading legacy MCP stable_39 mappings -> {archive}", quiet)
-        req = urllib.request.Request(LEGACY_MCP_1122_URL, headers={"User-Agent": "RBLocalLLM/1.2.22"})
+        req = urllib.request.Request(LEGACY_MCP_1122_URL, headers={"User-Agent": "GokuCodexAI/3.0.0"})
         tmp = archive.with_suffix('.zip.part')
         with urllib.request.urlopen(req, timeout=180) as r, tmp.open('wb') as out:
             shutil.copyfileobj(r, out, length=1024 * 1024)

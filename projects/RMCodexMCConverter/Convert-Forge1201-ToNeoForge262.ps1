@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Experimental converter: Minecraft Forge 1.20.1 workspace -> NeoForge 26.2 scaffold.
 
@@ -40,6 +40,7 @@ $ErrorActionPreference = 'Stop'
 $ToolRoot = $PSScriptRoot
 . (Join-Path $ToolRoot 'lib\ModDependencyPipeline.ps1')
 . (Join-Path $ToolRoot 'lib\ConversionCore.ps1')
+. (Join-Path $ToolRoot 'lib\Minecraft262HardenedTransforms.ps1')
 
 function Write-Step([string]$m) { Write-Host ""; Write-Host "==> $m" -ForegroundColor Cyan }
 function Write-Ok([string]$m) { Write-Host "    $m" -ForegroundColor Green }
@@ -537,7 +538,7 @@ function Invoke-MechanicalJavaRewrites {
         $t = $t -replace 'import\s+net\.neoforged\.neoforge\.event\.TickEvent;', "import net.neoforged.neoforge.client.event.ClientTickEvent;`r`nimport net.neoforged.neoforge.event.tick.ServerTickEvent;"
         $t = $t -replace 'TickEvent\.ClientTickEvent', 'ClientTickEvent'
         $t = $t -replace 'TickEvent\.ServerTickEvent', 'ServerTickEvent'
-        # phase END handlers ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Post events (common 1.20.1 pattern)
+        # phase END handlers ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Post events (common 1.20.1 pattern)
         $t = [regex]::Replace($t,
             '(?s)public\s+static\s+void\s+(\w+)\s*\(\s*ClientTickEvent\s+(\w+)\s*\)\s*\{\s*if\s*\(\s*\2\.phase\s*==\s*TickEvent\.Phase\.END\s*\)\s*\{(.*?)\}\s*\}',
             'public static void $1(ClientTickEvent.Post $2) {$3}')
@@ -893,7 +894,7 @@ function Invoke-ExactPrimerMigrationRules {
     #>
     param([string]$Root, $Profile, [string]$ModId)
 
-    $rules = @(@(Get-PrimerMigrationRules -SourceVersion ([string]$Profile.SourceVersion)) + @($Profile.SolvedRules) | Select-Object -Unique)
+    $rules = @(Get-PrimerMigrationRules -SourceVersion ([string]$Profile.SourceVersion))
     $touched = 0
     $javaRoot = Join-Path $Root 'src\main\java'
     $nl = [Environment]::NewLine
@@ -1278,7 +1279,7 @@ function Invoke-NeoForge26ApiRewritePass {
         $t = $t -replace 'Minecraft\.getInstance\(\)\.gameRenderer\.gameRenderer\.renderBuffers\(\)',
             'Minecraft.getInstance().gameRenderer.renderBuffers()'
 
-        # --- Colored Items/Blocks (ColorCollection) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â full dye grid ---
+        # --- Colored Items/Blocks (ColorCollection) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â full dye grid ---
         $t = Convert-ColorCollectionConstants $t
 
         # --- Weather / day-time (best-effort; many dims fix time in data) ---
@@ -1387,8 +1388,8 @@ function Invoke-MinecraftEntitySubpackageRemapPass {
     <#
     .SYNOPSIS
       1.21.11 primer entity/item package remaps for NeoForge 26.2:
-      animal/monster/npc subpackages, horseâ†’equine, Util, ArmorMaterial/ArmorType,
-      GameRules nested imports, and EntityRenderer one-type-arg â†’ LivingEntityRenderState.
+      animal/monster/npc subpackages, horse→equine, Util, ArmorMaterial/ArmorType,
+      GameRules nested imports, and EntityRenderer one-type-arg → LivingEntityRenderState.
     #>
     param([string]$Root)
 
@@ -1396,7 +1397,7 @@ function Invoke-MinecraftEntitySubpackageRemapPass {
     $nl = [Environment]::NewLine
     $touched = 0
 
-    # Class remaps: old FQN prefix (without trailing class) handled via exact oldâ†’new FQNs
+    # Class remaps: old FQN prefix (without trailing class) handled via exact old→new FQNs
     $classRemaps = [ordered]@{
         'net.minecraft.world.entity.animal.AbstractGolem' = 'net.minecraft.world.entity.animal.golem.AbstractGolem'
         'net.minecraft.world.entity.animal.IronGolem' = 'net.minecraft.world.entity.animal.golem.IronGolem'
@@ -1482,7 +1483,7 @@ function Invoke-MinecraftEntitySubpackageRemapPass {
         'net.minecraft.world.entity.vehicle.ChestBoat' = 'net.minecraft.world.entity.vehicle.boat.ChestBoat'
         'net.minecraft.world.entity.vehicle.ChestRaft' = 'net.minecraft.world.entity.vehicle.boat.ChestRaft'
         'net.minecraft.world.entity.vehicle.Raft' = 'net.minecraft.world.entity.vehicle.boat.Raft'
-        # Client feline model: 1.21.11 package move (intermediate). 26.1 split handled below â€” not 1:1.
+        # Client feline model: 1.21.11 package move (intermediate). 26.1 split handled below — not 1:1.
         'net.minecraft.client.model.FelineModel' = 'net.minecraft.client.model.animal.feline.FelineModel'
     }
 
@@ -1490,7 +1491,7 @@ function Invoke-MinecraftEntitySubpackageRemapPass {
         $t = [IO.File]::ReadAllText($file.FullName)
         $o = $t
 
-        # Undo prior blanket GeckoLib AnimationStateâ†’AnimationTest on vanilla entity AnimationState
+        # Undo prior blanket GeckoLib AnimationState→AnimationTest on vanilla entity AnimationState
         if ($t -match 'import\s+net\.minecraft\.world\.entity\.AnimationTest\b' -or
             ($t -match '(?<![\w.])AnimationTest\b' -and $t -notmatch 'import\s+com\.geckolib\b' -and $t -notmatch 'import\s+software\.bernie\b' -and $t -notmatch '\bcom\.geckolib\.' -and $t -notmatch '\bsoftware\.bernie\.')) {
             $t = $t -replace 'import\s+net\.minecraft\.world\.entity\.AnimationTest\s*;', 'import net.minecraft.world.entity.AnimationState;'
@@ -1512,7 +1513,7 @@ function Invoke-MinecraftEntitySubpackageRemapPass {
             }
         }
 
-        # 26.1: FelineModel split (not 1:1). createBodyMesh â†’ AdultFelineModel; setupAnim mixins â†’ Adult+Baby.
+        # 26.1: FelineModel split (not 1:1). createBodyMesh → AdultFelineModel; setupAnim mixins → Adult+Baby.
         if ($t -match 'client\.model\.animal\.feline\.FelineModel\b' -or $t -match '(?<![\w.])FelineModel\b') {
             $hasBodyMesh = $t -match 'createBodyMesh'
             $hasSetupAnimInject = $t -match 'setupAnim\(' -and $t -match '@Mixin'
@@ -1534,7 +1535,7 @@ function Invoke-MinecraftEntitySubpackageRemapPass {
             }
         }
 
-        # horse â†’ equine (package + FQN)
+        # horse → equine (package + FQN)
         $t = $t.Replace('net.minecraft.world.entity.animal.horse.', 'net.minecraft.world.entity.animal.equine.')
         $t = $t.Replace('net/minecraft/world/entity/animal/horse/', 'net/minecraft/world/entity/animal/equine/')
 
@@ -1575,7 +1576,7 @@ function Invoke-MinecraftEntitySubpackageRemapPass {
             $t = [regex]::Replace($t, '(?m)^(package\s+[^;]+;\s*)', "`$1${nl}import net.minecraft.world.level.gamerules.GameRules;${nl}", 1)
         }
 
-        # EntityRenderer<T> â†’ EntityRenderer<T, LivingEntityRenderState> (exactly one type arg)
+        # EntityRenderer<T> → EntityRenderer<T, LivingEntityRenderState> (exactly one type arg)
         if ($t -match 'extends\s+EntityRenderer<\s*[^,<>]+\s*>') {
             $t = [regex]::Replace($t, 'extends\s+EntityRenderer<\s*([^,<>]+?)\s*>', 'extends EntityRenderer<$1, LivingEntityRenderState>')
             if ($t -match 'LivingEntityRenderState' -and $t -notmatch 'import\s+net\.minecraft\.client\.renderer\.entity\.state\.LivingEntityRenderState\s*;') {
@@ -1596,7 +1597,7 @@ function Invoke-Minecraft262CustomGameRuleDeferredRegister {
     <#
     .SYNOPSIS
       Custom GameRules must not call GameRules.registerBoolean/register in <clinit> or
-      FMLCommonSetupEvent â€” BuiltInRegistries.GAME_RULE is frozen by mod construction
+      FMLCommonSetupEvent — BuiltInRegistries.GAME_RULE is frozen by mod construction
       (gecko_kings crash: spawnHellishXenomorphs). Match MCreator 26.1.2:
       DeferredRegister.create(Registries.GAME_RULE, MODID) + new GameRule<>() supplier,
       register REGISTRY on the mod bus, and .get() DeferredHolder at use sites.
@@ -1777,10 +1778,10 @@ function Invoke-Minecraft262CompileRepairPass {
     <#
     .SYNOPSIS
       Post-1.21.11 / 26.2 compile repairs proven on gecko_kings:
-      FogRenderer package, InteractionResult import, Tierâ†’ToolMaterial,
-      custom GameRules â†’ DeferredRegister(Registries.GAME_RULE) (not static registerBoolean),
-      ArmorMaterial.Layer â†’ 8-arg equipment record, DeferredSpawnEggItem â†’ SpawnEggItem,
-      SOUND_EVENT.getâ†’getValue, HierarchicalModel animator strip, final renderToBuffer strip,
+      FogRenderer package, InteractionResult import, Tier→ToolMaterial,
+      custom GameRules → DeferredRegister(Registries.GAME_RULE) (not static registerBoolean),
+      ArmorMaterial.Layer → 8-arg equipment record, DeferredSpawnEggItem → SpawnEggItem,
+      SOUND_EVENT.get→getValue, HierarchicalModel animator strip, final renderToBuffer strip,
       Capabilities.FluidHandler stub, fluid fog API reshape.
     #>
     param([string]$Root)
@@ -1794,16 +1795,6 @@ function Invoke-Minecraft262CompileRepairPass {
         $o = $t
 
         # --- Simple package / type remaps ---
-        # CASE-008 Woodlands: mechanically safe 26.2 portal/height remaps. The
-        # complete custom portal semantics remain protected by its solved overlay.
-        $t = $t.Replace('import net.minecraft.BlockUtil;', 'import net.minecraft.util.BlockUtil;')
-        $t = $t.Replace('import net.minecraft.BlockUtil.FoundRectangle;', 'import net.minecraft.util.BlockUtil.FoundRectangle;')
-        $t = $t.Replace('.getMinBuildHeight()', '.getMinY()')
-        $t = $t.Replace('.getMaxBuildHeight()', '.getMaxY()')
-        # ItemStack has a surviving InteractionHand overload in 26.2.
-        $t = $t.Replace('LivingEntity.getSlotForHand(context.getHand())', 'context.getHand()')
-        # Common MCreator argument-shift residue after the 26.2 loot signature rewrite.
-        $t = $t.Replace('super.dropCustomDeathLoot(level, serverLevel, recentlyHitIn);', 'super.dropCustomDeathLoot(serverLevel, source, recentlyHitIn);')
         $t = $t.Replace('import net.minecraft.client.renderer.FogRenderer', 'import net.minecraft.client.renderer.fog.FogRenderer')
         $t = $t.Replace('net.minecraft.client.renderer.FogRenderer.', 'net.minecraft.client.renderer.fog.FogRenderer.')
         $t = $t -replace 'import\s+net\.minecraft\.world\.item\.context\.InteractionResult\s*;', 'import net.minecraft.world.InteractionResult;'
@@ -1813,13 +1804,13 @@ function Invoke-Minecraft262CompileRepairPass {
         }
 
         # Mixin pattern-matching: `this instanceof T` is illegal when the mixin class is unrelated to T
-        # (catfighting Entity/LivingEntity mixins â†’ Cat). Cast through Object first.
+        # (catfighting Entity/LivingEntity mixins → Cat). Cast through Object first.
         if ($t -match '@Mixin' -and $t -match '(?<!\(Object\)\s)(?<![\w.])this\s+instanceof\s+') {
             $t = [regex]::Replace($t, '(?<!\(Object\)\s)(?<![\w.])this\s+instanceof\s+', '(Object) this instanceof ')
         }
 
         # CASE-006: FlyingMob / FlyingAnimal removed (primers 1.21.6 / 26.2). Leaf heuristic:
-        # Ghast / HappyGhast / Phantom / Bee.isFlying() â€” omnidirectionalAirMover() is protected.
+        # Ghast / HappyGhast / Phantom / Bee.isFlying() — omnidirectionalAirMover() is protected.
         if ($t -match 'FlyingMob|FlyingAnimal') {
             $t = $t -replace 'import\s+net\.minecraft\.world\.entity\.FlyingMob\s*;\r?\n', ''
             $t = $t -replace 'import\s+net\.minecraft\.world\.entity\.animal\.FlyingAnimal\s*;\r?\n', ''
@@ -1843,7 +1834,7 @@ function Invoke-Minecraft262CompileRepairPass {
             }
         }
 
-        # CASE-006: CatVariant.X / FrogVariant.X constants â†’ CatVariants / FrogVariants ResourceKeys
+        # CASE-006: CatVariant.X / FrogVariant.X constants → CatVariants / FrogVariants ResourceKeys
         if ($t -match '(?<![\w.])CatVariant\.[A-Z_]+' -or $t -match '(?<![\w.])FrogVariant\.[A-Z_]+') {
             $t = $t -replace '(?<![\w.])CatVariant\.([A-Z_]+)\b', 'CatVariants.$1'
             $t = $t -replace '(?<![\w.])FrogVariant\.([A-Z_]+)\b', 'FrogVariants.$1'
@@ -1855,7 +1846,7 @@ function Invoke-Minecraft262CompileRepairPass {
             }
         }
 
-        # CASE-006: cpw.mods.modlauncher Launcher VERSION probe â†’ FMLLoader production check
+        # CASE-006: cpw.mods.modlauncher Launcher VERSION probe → FMLLoader production check
         if ($t -match 'cpw\.mods\.modlauncher' -or $t -match 'Launcher\.INSTANCE\.environment') {
             $t = $t -replace 'import\s+cpw\.mods\.modlauncher\.Launcher\s*;\r?\n', ''
             $t = $t -replace 'import\s+cpw\.mods\.modlauncher\.api\.IEnvironment\.Keys\s*;\r?\n', ''
@@ -1868,15 +1859,15 @@ function Invoke-Minecraft262CompileRepairPass {
                 $t = [regex]::Replace($t, '(?m)^(package\s+[^;]+;\s*)', "`$1${nl}import net.neoforged.fml.loading.FMLLoader;${nl}", 1)
             }
         }
-        # InteractionResultHolder removed â€” Item.use returns InteractionResult
+        # InteractionResultHolder removed — Item.use returns InteractionResult
         $t = $t -replace 'InteractionResultHolder<\s*ItemStack\s*>', 'InteractionResult'
         $t = $t -replace 'import\s+net\.minecraft\.world\.InteractionResultHolder\s*;\r?\n', ''
 
-        # BuiltInRegistries.*.get(Identifier) â†’ getValue (Optional Holder â†’ T)
+        # BuiltInRegistries.*.get(Identifier) → getValue (Optional Holder → T)
         $t = $t -replace '\(SoundEvent\)\s*BuiltInRegistries\.SOUND_EVENT\.get\(', 'BuiltInRegistries.SOUND_EVENT.getValue('
         $t = $t -replace 'BuiltInRegistries\.SOUND_EVENT\.get\(Identifier\.parse\(', 'BuiltInRegistries.SOUND_EVENT.getValue(Identifier.parse('
 
-        # DeferredSpawnEggItem â†’ SpawnEggItem(properties.spawnEgg(type.get()))
+        # DeferredSpawnEggItem → SpawnEggItem(properties.spawnEgg(type.get()))
         if ($t -match 'DeferredSpawnEggItem') {
             $t = $t -replace 'import\s+net\.neoforged\.neoforge\.common\.DeferredSpawnEggItem\s*;', 'import net.minecraft.world.item.SpawnEggItem;'
             $t = [regex]::Replace($t,
@@ -1887,11 +1878,11 @@ function Invoke-Minecraft262CompileRepairPass {
                 'REGISTRY.registerItem("$1", p -> new SpawnEggItem(p.spawnEgg($2)))')
         }
 
-        # Capabilities.FluidHandler â†’ Capabilities.Fluid (API reshape; bucket wrapper often stubbed)
+        # Capabilities.FluidHandler → Capabilities.Fluid (API reshape; bucket wrapper often stubbed)
         if ($t -match 'Capabilities\.FluidHandler') {
             $t = $t -replace 'import\s+net\.neoforged\.neoforge\.capabilities\.Capabilities\.FluidHandler\s*;', 'import net.neoforged.neoforge.capabilities.Capabilities;'
             $t = $t -replace 'FluidHandler\.ITEM', 'Capabilities.Fluid.ITEM'
-            # FluidBucketWrapper no longer matches ResourceHandler<FluidResource> â€” neutralize registration body
+            # FluidBucketWrapper no longer matches ResourceHandler<FluidResource> — neutralize registration body
             if ($t -match 'FluidBucketWrapper|Capabilities\.Fluid\.ITEM') {
                 $t = [regex]::Replace($t,
                     '(?s)@SubscribeEvent\s+public static void registerCapabilities\s*\(\s*RegisterCapabilitiesEvent\s+\w+\s*\)\s*\{(?:[^{}]|\{[^{}]*\})*\}',
@@ -1899,7 +1890,7 @@ function Invoke-Minecraft262CompileRepairPass {
             }
         }
 
-        # FogShape / old fluid fog signatures â†’ 26.2 FogData API (or strip body)
+        # FogShape / old fluid fog signatures → 26.2 FogData API (or strip body)
         if ($t -match 'FogShape|FogRenderer\.FogMode|modifyFogRender|modifyFogColor') {
             $t = $t -replace 'import\s+com\.mojang\.blaze3d\.shaders\.FogShape\s*;\r?\n', ''
             $t = $t -replace 'import\s+net\.minecraft\.client\.renderer\.fog\.FogRenderer\.FogMode\s*;\r?\n', ''
@@ -1908,7 +1899,7 @@ function Invoke-Minecraft262CompileRepairPass {
                 $t = [regex]::Replace($t, '(?m)^(package\s+[^;]+;\s*)',
                     "`$1${nl}import net.minecraft.client.renderer.fog.FogData;${nl}import net.minecraft.client.renderer.fog.environment.FogEnvironment;${nl}import org.joml.Vector4f;${nl}", 1)
             }
-            # Vector3f-returning modifyFogColor â†’ void Vector4f mutator
+            # Vector3f-returning modifyFogColor → void Vector4f mutator
             $t = [regex]::Replace($t,
                 '(?s)public\s+Vector3f\s+modifyFogColor\s*\(\s*Camera\s+(\w+)\s*,\s*float\s+(\w+)\s*,\s*ClientLevel\s+(\w+)\s*,\s*int\s+(\w+)\s*,\s*float\s+(\w+)\s*,\s*Vector3f\s+(\w+)\s*\)\s*\{.*?return\s+new\s+Vector3f\s*\(([^;]+)\);\s*\}',
                 'public void modifyFogColor(Camera $1, float $2, ClientLevel $3, int $4, float $5, Vector4f $6) { $6.set($7, $6.w); }')
@@ -1917,7 +1908,7 @@ function Invoke-Minecraft262CompileRepairPass {
                 'public void modifyFogRender(Camera $1, FogEnvironment environment, float $2, float $3, FogData fogData) { }')
         }
 
-        # Tier anonymous class â†’ ToolMaterial + Properties.sword (MCreator wristblade/sword)
+        # Tier anonymous class → ToolMaterial + Properties.sword (MCreator wristblade/sword)
         if ($t -match '(?s)private static final Tier TOOL_TIER = new Tier\(\)\s*\{') {
             $m = [regex]::Match($t, '(?s)private static final Tier TOOL_TIER = new Tier\(\)\s*\{(.*?)\n   \};')
             $body = if ($m.Success) { $m.Groups[1].Value } else { '' }
@@ -1938,7 +1929,7 @@ function Invoke-Minecraft262CompileRepairPass {
             $toolMat = "private static final ToolMaterial TOOL_MATERIAL = new ToolMaterial($incorrect, $uses, $speed, $dmg, $ench, TagKey.create(Registries.ITEM, Identifier.parse(`"$repairTag`")));"
             $t = [regex]::Replace($t, '(?s)private static final Tier TOOL_TIER = new Tier\(\)\s*\{.*?\n   \};', $toolMat)
             $t = $t -replace 'import\s+net\.minecraft\.world\.item\.Tier\s*;', 'import net.minecraft.world.item.ToolMaterial;'
-            # .NET Replace treats $atk as group refs â€” concatenate instead
+            # .NET Replace treats $atk as group refs — concatenate instead
             $swordSuper = 'super(new Properties().sword(TOOL_MATERIAL, ' + $atk + ', ' + $atkSpeed + '))'
             $t = [regex]::Replace($t,
                 'super\(\s*TOOL_TIER\s*,\s*new Properties\(\)\.attributes\(SwordItem\.createAttributes\(\s*TOOL_TIER\s*,\s*[0-9.F]+\s*,\s*[-0-9.F]+\s*\)\)\s*\)',
@@ -1974,7 +1965,7 @@ function Invoke-Minecraft262CompileRepairPass {
             $t = $t -replace 'import\s+net\.minecraft\.world\.level\.GameRules\.(BooleanValue|IntegerValue|Category|Key)\s*;\r?\n', ''
         }
 
-        # ArmorMaterial.Layer MCreator constructor â†’ 8-arg equipment record (Map.of defense)
+        # ArmorMaterial.Layer MCreator constructor → 8-arg equipment record (Map.of defense)
         if ($t -match 'List\.of\(\s*new\s+Layer\s*\(' -or $t -match 'new\s+Layer\s*\(\s*Identifier\.parse') {
             $dur = 15
             if ($t -match 'getDurability\s*\(\s*(\d+)\s*\)') { $dur = [int]$Matches[1] }
@@ -2009,14 +2000,14 @@ function Invoke-Minecraft262CompileRepairPass {
             $t = $t -replace 'ARMOR_MATERIAL = BuiltInRegistries\.ARMOR_MATERIAL\.wrapAsHolder\(armorMaterial\);', 'ARMOR_MATERIAL = armorMaterial;'
         }
 
-        # HierarchicalModel animator inner classes â€” drop broken animator; keep model
+        # HierarchicalModel animator inner classes — drop broken animator; keep model
         if ($t -match 'HierarchicalModel') {
             $t = $t -replace 'import\s+net\.minecraft\.client\.model\.HierarchicalModel\s*;\r?\n', ''
             # Swimmer-style: use base model in super(), delete AnimatedModel nested class
             $t = [regex]::Replace($t,
                 'super\(\s*context\s*,\s*new\s+\w+\.AnimatedModel\s*\(\s*context\.bakeLayer\(([^)]+)\)\s*\)\s*,',
                 'super(context, new ModelXenomorph_Swimmer(context.bakeLayer($1)),')
-            # Generic: AnimatedModel(bakeLayer(X)) â†’ model type from extends clause if possible
+            # Generic: AnimatedModel(bakeLayer(X)) → model type from extends clause if possible
             if ($t -match 'extends\s+MobRenderer<[^,]+,\s*[^,]+,\s*(\w+)\s*>') {
                 $modelType = $Matches[1]
                 $t = [regex]::Replace($t,
@@ -2029,7 +2020,7 @@ function Invoke-Minecraft262CompileRepairPass {
             $t = [regex]::Replace($t, '(?s)\s*private static final class AnimatedModel extends \w+ \{.*?\n   \}\s*', "${nl}")
         }
 
-        # Model.renderToBuffer overrides are final in 26.2 â€” remove override methods
+        # Model.renderToBuffer overrides are final in 26.2 — remove override methods
         if ($t -match 'void\s+renderToBuffer\s*\(\s*PoseStack') {
             $t = [regex]::Replace($t,
                 '(?s)\s*public void renderToBuffer\s*\(\s*PoseStack\s+\w+\s*,\s*VertexConsumer\s+\w+\s*,\s*int\s+\w+\s*,\s*int\s+\w+\s*,\s*int\s+\w+\s*\)\s*\{(?:[^{}]|\{[^{}]*\})*\}',
@@ -2041,7 +2032,7 @@ function Invoke-Minecraft262CompileRepairPass {
             $t = [regex]::Replace($t, '(?s)\s*(?:@Override\s*)?public Identifier getArmorTexture\s*\([^)]*Layer[^)]*\)\s*\{(?:[^{}]|\{[^{}]*\})*\}', '')
         }
 
-        # Old entity-typed glow RenderLayer blocks break 26.2 RenderState generics â€” drop for compile
+        # Old entity-typed glow RenderLayer blocks break 26.2 RenderState generics — drop for compile
         if ($t -match 'this\.addLayer\(\s*new RenderLayer<') {
             $t = [regex]::Replace($t, '(?s)\s*this\.addLayer\(\s*new RenderLayer<[^>]+>\(this\)\s*\{.*?\n\s*\}\s*\);', '')
         }
@@ -2070,7 +2061,7 @@ function Invoke-Minecraft262CompileRepairPass {
             $t = $t -replace 'super\.customServerAiStep\s*\(\s*\)\s*;', 'super.customServerAiStep(level);'
         }
 
-        # AbstractArrow: inGround field â†’ isInGround(); EntityType<? extends Self> â†’ <? extends AbstractArrow>
+        # AbstractArrow: inGround field → isInGround(); EntityType<? extends Self> → <? extends AbstractArrow>
         if ($t -match 'extends\s+AbstractArrow\b') {
             $t = $t -replace '(?<![\w.])this\.inGround\b(?!\s*\()', 'this.isInGround()'
             $t = [regex]::Replace($t,
@@ -2087,7 +2078,7 @@ function Invoke-Minecraft262CompileRepairPass {
         $t = [regex]::Replace($t, 'rotlerp\(\s*(\w+Entity)\.this\s*,', 'rotlerp($1.this.getXRot(),')
         $t = [regex]::Replace($t, 'Mth\.(cos|sin)\(\s*(\w+Entity)\.this\s*\*', 'Mth.$1($2.this.getXRot() *')
 
-        # Entity.getLevel() â†’ level(); spawnAtLocation(level, â€¦) needs ServerLevel
+        # Entity.getLevel() → level(); spawnAtLocation(level, …) needs ServerLevel
         $t = $t -replace '(?<![\w.])this\.getLevel\s*\(\s*\)', 'this.level()'
         if ($t -match 'spawnAtLocation\s*\(\s*level\s*,') {
             if ($t -notmatch 'import\s+net\.minecraft\.server\.level\.ServerLevel\s*;') {
@@ -2096,7 +2087,7 @@ function Invoke-Minecraft262CompileRepairPass {
             $t = $t -replace 'spawnAtLocation\s*\(\s*level\s*,', 'spawnAtLocation((ServerLevel) this.level(),'
         }
 
-        # Registries.ARMOR_MATERIAL removed in 26.2 â€” ArmorMaterial is a plain record used via humanoidArmor
+        # Registries.ARMOR_MATERIAL removed in 26.2 — ArmorMaterial is a plain record used via humanoidArmor
         if ($t -match 'Registries\.ARMOR_MATERIAL' -and $t -match 'new\s+ArmorMaterial\s*\(') {
             $m = [regex]::Match($t, 'ArmorMaterial\s+armorMaterial\s*=\s*(new\s+ArmorMaterial\s*\(.*?\))\s*;', [System.Text.RegularExpressions.RegexOptions]::Singleline)
             if ($m.Success) {
@@ -2161,7 +2152,7 @@ function Invoke-Minecraft262CompileRepairPass {
             }
         }
 
-        # Ingredient.of(ItemStack[]) no longer exists â€” prefer ItemLike
+        # Ingredient.of(ItemStack[]) no longer exists — prefer ItemLike
         $t = [regex]::Replace($t,
             'Ingredient\.of\s*\(\s*new\s+ItemStack\[\]\s*\{\s*new\s+ItemStack\s*\(\s*(Items\.\w+)\s*\)\s*\}\s*\)',
             'Ingredient.of($1)')
@@ -2169,12 +2160,12 @@ function Invoke-Minecraft262CompileRepairPass {
             'Ingredient\.of\s*\(\s*new\s+ItemStack\[\]\s*\{\s*new\s+ItemStack\s*\(\s*((?:\(ItemLike\))?[^}]+?)\s*\)\s*\}\s*\)',
             'Ingredient.of($1)')
 
-        # Potion(String name, MobEffectInstance...) â€” drop array wrapper when present
+        # Potion(String name, MobEffectInstance...) — drop array wrapper when present
         $t = [regex]::Replace($t,
             'REGISTRY\.register\(\s*"([^"]+)"\s*,\s*\(\)\s*->\s*new\s+Potion\s*\(\s*new\s+MobEffectInstance\[\]\s*\{\s*(new\s+MobEffectInstance\s*\([^}]+\))\s*\}\s*\)\s*\)',
             'REGISTRY.register("$1", () -> new Potion("$1", $2))')
 
-        # EntityType.Builder.build(registryname string) â†’ ResourceKey
+        # EntityType.Builder.build(registryname string) → ResourceKey
         if ($t -match 'entityTypeBuilder\.build\(\s*registryname\s*\)') {
             if ($t -notmatch 'import\s+net\.minecraft\.resources\.ResourceKey\s*;') {
                 $t = [regex]::Replace($t, '(?m)^(package\s+[^;]+;\s*)', "`$1${nl}import net.minecraft.resources.ResourceKey;${nl}import net.minecraft.resources.Identifier;${nl}import net.minecraft.core.registries.Registries;${nl}", 1)
@@ -2187,7 +2178,7 @@ function Invoke-Minecraft262CompileRepairPass {
         }
 
         # CASE-005 full-restore leftovers (procedures / effects / tools)
-        # Multiline EntityType.is(TagKey) â†’ builtInRegistryHolder().is
+        # Multiline EntityType.is(TagKey) → builtInRegistryHolder().is
         $t = [regex]::Replace($t, '\.getType\(\)\s*\r?\n?\s*\.is\(', '.getType().builtInRegistryHolder().is(')
         $t = $t -replace 'MobEffects\.MOVEMENT_SLOWDOWN\b', 'MobEffects.SLOWNESS'
         $t = $t -replace 'MobEffects\.JUMP\b(?!_)', 'MobEffects.JUMP_BOOST'
@@ -2216,8 +2207,9 @@ function Invoke-Minecraft262CompileRepairPass {
         }
         # Vineflower/sword attack-speed token lost as bare F
         $t = $t -replace '\.sword\(\s*TOOL_MATERIAL\s*,\s*([0-9.]+F)\s*,\s*F\s*\)', '.sword(TOOL_MATERIAL, $1, -0.8F)'
+        $t = Convert-Minecraft262LeafApiText -Text $t
 
-        # CASE-005 MobEffect 26.2 â€” MUST live in this pass (runs for every route).
+        # CASE-005 MobEffect 26.2 — MUST live in this pass (runs for every route).
         # Previously only in Invoke-McreatorForge1201ResiduePass (gated on mcreator-1.20.1),
         # so NeoForge 1.21.x Mode B never applied them and installer runs regenerated the same errors.
         # Exact target: applyEffectTick(ServerLevel, LivingEntity, int); renderInventoryText removed.
@@ -2286,7 +2278,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
-/** Primer 1.21.2 Entity Render States â€” mirror ArrowRenderer.submit pattern. */
+/** Primer 1.21.2 Entity Render States — mirror ArrowRenderer.submit pattern. */
 public class $cls extends EntityRenderer<$entSimple, LivingEntityRenderState> {
    private static final Identifier TEXTURE = Identifier.parse("$texLiteral");
    private final $modelType $modelName;
@@ -2324,7 +2316,7 @@ public class $cls extends EntityRenderer<$entSimple, LivingEntityRenderState> {
         }
 
         # TemptGoal.canUse reads Attributes.TEMPT_RANGE (default 10). Mob.createMobAttributes()
-        # does not include it â€” chestburster tick crash: Can't find attribute minecraft:tempt_range.
+        # does not include it — chestburster tick crash: Can't find attribute minecraft:tempt_range.
         if ($t -match 'new\s+TemptGoal\b' -and $t -match 'createAttributes\s*\(' -and $t -notmatch 'Attributes\.TEMPT_RANGE') {
             $t = [regex]::Replace($t,
                 '(public static Builder createAttributes\(\) \{)([\s\S]*?)(\r?\n\s*return builder)',
@@ -2335,7 +2327,7 @@ public class $cls extends EntityRenderer<$entSimple, LivingEntityRenderState> {
                 })
         }
 
-        # Projectile models: setupAnim(Entity,...) / multi-arg â†’ setupAnim(LivingEntityRenderState)
+        # Projectile models: setupAnim(Entity,...) / multi-arg → setupAnim(LivingEntityRenderState)
         if ($file.Name -match 'Model' -and $t -match 'EntityModel<' -and $t -match 'setupAnim\(' -and $t -match 'Acid|Spit|Projectile|Arrow') {
             $t = $t -replace 'extends\s+EntityModel<\s*Entity\s*>', 'extends EntityModel<net.minecraft.client.renderer.entity.state.LivingEntityRenderState>'
             $t = $t -replace 'extends\s+EntityModel<\s*[\w.]+Entity\s*>', 'extends EntityModel<net.minecraft.client.renderer.entity.state.LivingEntityRenderState>'
@@ -2438,7 +2430,7 @@ function Invoke-OptionalIntegrationExcludePass {
         }
     }
 
-    # Always drop GameTest harness sources â€” annotations are not on the leaf compile classpath
+    # Always drop GameTest harness sources — annotations are not on the leaf compile classpath
     # (262r soft-dep-exclude; CASE-006 Easy Mob Farm). Delete files + exclude, even when no soft-dep jars missing.
     $javaRootForGt = Join-Path $Root 'src\main\java'
     if (Test-Path -LiteralPath $javaRootForGt) {
@@ -2637,9 +2629,6 @@ function Invoke-Mcreator1218ToNeoForge262Pass {
         $t = $t -replace '\bprotected\s+void\s+renderBg\s*\(', 'public void extractBackground('
         $t = $t -replace '\bpublic\s+void\s+renderBg\s*\(', 'public void extractBackground('
         $t = $t -replace '\.renderTooltip\s*\(', '.extractTooltip('
-        # 26.2 extract pipeline fixes proven by completed 1.21.4 conversions.
-        $t = $t -replace '\bsuper\.render\s*\(\s*(guiGraphics\s*,\s*mouseX\s*,\s*mouseY\s*,\s*partialTicks)\s*\)', 'super.extractRenderState($1)'
-        $t = $t -replace '\.extractTooltip\s*\(', '.setTooltipForNextFrame('
         $t = $t -replace '\bprotected\s+void\s+renderLabels\s*\(', 'protected void extractLabels('
         $t = $t -replace '\bpublic\s+void\s+renderLabels\s*\(', 'public void extractLabels('
         # render(...) that was the old Screen render hook often becomes extractRenderState
@@ -2647,7 +2636,7 @@ function Invoke-Mcreator1218ToNeoForge262Pass {
             '(?m)^(\s*)public\s+void\s+render\s*\(\s*GuiGraphicsExtractor\s+',
             '$1public void extractRenderState(GuiGraphicsExtractor ')
 
-        # imageWidth/imageHeight are final ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â pass size into super(...)
+        # imageWidth/imageHeight are final ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â pass size into super(...)
         # Immediate form: super(...); this.imageWidth = W; this.imageHeight = H;
         $t = [regex]::Replace($t,
             'super\(([^;]+?)\);\s*this\.imageWidth\s*=\s*(\d+)\s*;\s*this\.imageHeight\s*=\s*(\d+)\s*;',
@@ -2674,13 +2663,6 @@ function Invoke-Mcreator1218ToNeoForge262Pass {
         $t = $t -replace 'import\s+net\.minecraft\.client\.renderer\.rendertype\.RenderTypes;\r?\n', ''
         $t = $t -replace 'import\s+com\.mojang\.blaze3d\.systems\.RenderSystem;\r?\n', ''
         $t = [regex]::Replace($t, 'guiGraphics\.drawString\s*\(', 'guiGraphics.text(')
-        # Model packages, renderer arity, and common constructors changed in 26.2.
-        $t = $t -replace 'import\s+net\.minecraft\.client\.model\.CowModel\s*;', 'import net.minecraft.client.model.animal.cow.CowModel;'
-        $t = $t -replace 'import\s+net\.minecraft\.client\.model\.PigModel\s*;', 'import net.minecraft.client.model.animal.pig.PigModel;'
-        $t = [regex]::Replace($t, 'extends\s+MobRenderer<([^,>]+),\s*net\.minecraft\.client\.renderer\.entity\.state\.LivingEntityRenderState,\s*LivingEntityRenderState,\s*([^>]+)>', 'extends MobRenderer<$1, LivingEntityRenderState, $2>')
-        $t = $t -replace 'registerBlock\(name,\s*supplier,\s*Properties\.of\(\)\)', 'registerBlock(name, supplier, () -> Properties.of())'
-        $t = [regex]::Replace($t, 'new\s+KeyMapping\(([^,]+),\s*([^,]+),\s*"key\.categories\.misc"\)', 'new KeyMapping($1, $2, KeyMapping.Category.MISC)')
-        $t = $t -replace 'import\s+net\.minecraft\.client\.renderer\.CoreShaders\s*;\s*\r?\n', ''
         $t = $t -replace 'ClientClientPacketDistributor', 'ClientPacketDistributor'
         if ($t -match '(?<!Client)PacketDistributor\.sendToServer') {
             $t = [regex]::Replace($t, '(?<!Client)PacketDistributor\.sendToServer', 'ClientPacketDistributor.sendToServer')
@@ -2959,7 +2941,7 @@ public boolean keyPressed(KeyEvent event) {
         $t = $t -replace '\.read\(\s*tag\s*,\s*ctx\.levelOrThrow\(\)\.registryAccess\(\)\s*\)', '.read(tag, null)'
         $t = $t -replace '\.save\(\s*new\s+CompoundTag\(\)\s*,\s*ctx\.levelOrThrow\(\)\.registryAccess\(\)\s*\)', '.save(new CompoundTag(), null)'
 
-        # MoveControl.Operation is protected in 26.2 â€” hasWanted() is the public MOVE_TO check
+        # MoveControl.Operation is protected in 26.2 — hasWanted() is the public MOVE_TO check
         $t = $t -replace 'import\s+net\.minecraft\.world\.entity\.ai\.control\.MoveControl\.Operation\s*;\s*\r?\n', ''
         $t = $t -replace 'this\.operation\s*==\s*Operation\.MOVE_TO', 'this.hasWanted()'
         $t = $t -replace 'this\.operation\s*==\s*MoveControl\.Operation\.MOVE_TO', 'this.hasWanted()'
@@ -3123,7 +3105,7 @@ function Invoke-McreatorForge1201ResiduePass {
         $t = $t -replace 'if \(!animation\.equals\("undefined"\)\)', 'if (!syncedAnim.equals("undefined"))'
         $t = $t -replace 'syncable\.animationprocedure = animation;', 'syncable.animationprocedure = syncedAnim;'
 
-        # MobEffect 26.2 â€” kept here for 1.20.1 residue route; primary copy is in
+        # MobEffect 26.2 — kept here for 1.20.1 residue route; primary copy is in
         # Invoke-Minecraft262CompileRepairPass so 1.21.x Mode B also applies them.
         $nlFx = [Environment]::NewLine
         $t = $t -replace 'boolean isDurationEffectTick\(', 'boolean shouldApplyEffectTickThisTick('
@@ -3148,7 +3130,7 @@ function Invoke-McreatorForge1201ResiduePass {
             $t = $t -replace '(?m)^import\s+net\.minecraft\.client\.gui\.GuiGraphicsExtractor\s*;\r?\n', ''
         }
 
-        # CompoundTag 26.2 Optional accessors â€” only NBT variables, never Brigadier getDouble
+        # CompoundTag 26.2 Optional accessors — only NBT variables, never Brigadier getDouble
         foreach ($nbtVar in @('nbt', 'tag', 'compound', 'compoundTag')) {
             $t = $t -replace "\b$nbtVar\.getBoolean\(([^)]+)\)", "$nbtVar.getBooleanOr(`$1, false)"
             $t = $t -replace "\b$nbtVar\.getDouble\(([^)]+)\)", "$nbtVar.getDoubleOr(`$1, 0.0)"
@@ -3411,7 +3393,7 @@ function Invoke-BlockItemIdPass {
             'public $1(net.minecraft.world.level.block.state.BlockBehaviour.Properties properties) { super(properties')
 
         # Item: public Foo() { super( [extra args,] new Properties()... } including armor inner + BucketItem
-        # Skip rewrite when a Properties ctor already exists â€” otherwise duplicate erasure
+        # Skip rewrite when a Properties ctor already exists — otherwise duplicate erasure
         # (BlankMobCaptureCardItem / CreativeBlankMobCaptureCardItem on Easy Mob Farm).
         $itemCtorMatches = @([regex]::Matches($t, '(?s)public (\w+)\(\) \{(\s*super\((?:[\s\S]*?))new (?:Item\.)?Properties\(\)'))
         for ($mi = $itemCtorMatches.Count - 1; $mi -ge 0; $mi--) {
@@ -3540,7 +3522,7 @@ function Invoke-GeckoLib26Pass {
         $t = $t -replace 'controllers\.add\(new AnimationController\[\]\{new AnimationController(?:<>)?\(', 'controllers.add(new AnimationController<>('
         $t = $t -replace '(this::\w+)\)\}\);', '$1));'
         # Completed TOWW 26.2: unused procedure controller must STOP, not CONTINUE (in-place mesh jitter).
-        # Do not flatten movement clips to pose1 â€” hunting uses chase, hanging hang, crawling pose6.
+        # Do not flatten movement clips to pose1 — hunting uses chase, hanging hang, crawling pose6.
         $t = [regex]::Replace($t,
             '(?s)private PlayState procedurePredicate\(AnimationTest event\) \{.*?\n   \}',
             @'
@@ -3826,7 +3808,7 @@ public final class LegacySubmitCustomGeometryHooks {
                     section.getRenderOrigin().getX() - camera.x,
                     section.getRenderOrigin().getY() - camera.y,
                     section.getRenderOrigin().getZ() - camera.z);
-            // Disabled by default â€” enable after porting your draw logic.
+            // Disabled by default — enable after porting your draw logic.
             if (false) {
                 event.getSubmitNodeCollector().submitShapeOutline(
                         poseStack, unit, RenderTypes.lines(), 0xFFFF0000, lineWidth, false);
@@ -3880,11 +3862,6 @@ function Restore-ModAssets {
         )) {
         if (Test-Path $p) { $candidates.Add($p) | Out-Null }
     }
-    if ($ModId -eq 'the_one_who_watches') {
-        $toww = 'F:\rob_projects\Completed\GrokBuild_MF\Completed_Projects\Java\26.2\Gradle_Workspaces\TheOneWhoWatches-26.2\src\main\resources'
-        if (Test-Path $toww) { $candidates.Add($toww) | Out-Null }
-    }
-
     foreach ($resRoot in $candidates) {
         $assets = Join-Path $resRoot 'assets'
         if (-not (Test-Path $assets)) { continue }
@@ -3937,7 +3914,7 @@ function Restore-ModAssets {
             Write-Warn2 "Asset jar extract failed $(Split-Path $jarPath -Leaf): $($_.Exception.Message)"
         }
     }
-    Write-Warn2 'No textures/models found to restore â€” items/blocks will be purple/black in-game'
+    Write-Warn2 'No textures/models found to restore — items/blocks will be purple/black in-game'
     return 0
 }
 
@@ -3985,7 +3962,7 @@ function Invoke-Minecraft262RecipeIngredientPass {
     <#
     .SYNOPSIS
       26.2 Ingredient.CODEC accepts a registry-name string (or #tag), not legacy {"item":"..."} / {"tag":"..."} objects.
-      MCreator 26.1.x datapack templates emit plain strings; 1.21.x jars still ship object ingredients â†’ recipe parse errors.
+      MCreator 26.1.x datapack templates emit plain strings; 1.21.x jars still ship object ingredients → recipe parse errors.
       Evidence: Exact_Version_Sources/NeoForge/26.2 SizedIngredient docs ("ingredient": "minecraft:apple");
       MCreator generator-26.1.x datapack templates/recipe/crafting.json.ftl + smithing.json.ftl.
     #>
@@ -4012,10 +3989,30 @@ function Invoke-Minecraft262RecipeIngredientPass {
     return $touched
 }
 
+function Invoke-Minecraft262TreeConfiguredFeaturePass {
+    [CmdletBinding()]
+    param([string]$Root)
+
+    $dataRoot = Join-Path $Root 'src\main\resources\data'
+    if (-not (Test-Path -LiteralPath $dataRoot)) { return 0 }
+    $touched = 0
+    $files = Get-ChildItem -LiteralPath $dataRoot -Recurse -Filter '*.json' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match '[\\/]worldgen[\\/]configured_feature[\\/]' }
+    foreach ($file in @($files)) {
+        $original = [IO.File]::ReadAllText($file.FullName)
+        $converted = Convert-Minecraft262TreeConfiguredFeatureDocument -JsonText $original
+        if ($converted -ne $original.TrimEnd()) {
+            [IO.File]::WriteAllText($file.FullName, $converted)
+            $touched++
+        }
+    }
+    return $touched
+}
+
 function Invoke-Minecraft262ItemModelPass {
     <#
     .SYNOPSIS
-      26.2 removed minecraft:item/template_spawn_egg (gecko_kings creative tab is mostly spawn eggs â†’ purple/black).
+      26.2 removed minecraft:item/template_spawn_egg (gecko_kings creative tab is mostly spawn eggs → purple/black).
       Namespace unprefixed item/block model parents and restore a two-layer spawn-egg template from 1.21.1.
     #>
     param([string]$Root, [string]$ToolRoot)
@@ -4044,6 +4041,18 @@ function Invoke-Minecraft262ItemModelPass {
             if ($t -ne $o) {
                 [IO.File]::WriteAllText($f.FullName, $t)
                 $touched++
+            }
+        }
+        $clientItems = Join-Path $nsDir.FullName 'items'
+        foreach ($f in @(Get-ChildItem -LiteralPath $clientItems -Filter '*.json' -File -ErrorAction SilentlyContinue)) {
+            $original = [IO.File]::ReadAllText($f.FullName)
+            $converted = Convert-Minecraft262ClientItemDocument -JsonText $original -ModId $modid
+            if ($converted -ne $original.TrimEnd()) {
+                $usedTemplate = $true
+                [IO.File]::WriteAllText($f.FullName, $converted)
+                $touched++
+            } elseif ($converted -match [regex]::Escape("${modid}:item/template_spawn_egg")) {
+                $usedTemplate = $true
             }
         }
         foreach ($f in @(Get-ChildItem -LiteralPath (Join-Path $nsDir.FullName 'models\block') -Filter '*.json' -File -ErrorAction SilentlyContinue)) {
@@ -4081,7 +4090,6 @@ function Ensure-ClientItems {
         New-Item -ItemType Directory -Path $itemsDir -Force | Out-Null
         foreach ($m in Get-ChildItem $modelsItem -Filter '*.json') {
             $id = [IO.Path]::GetFileNameWithoutExtension($m.Name)
-            if ($id -like 'template_*') { continue }
             $cp = Join-Path $itemsDir "$id.json"
             if (Test-Path $cp) { continue }
             $json = "{`r`n  `"model`": {`r`n    `"type`": `"minecraft:model`",`r`n    `"model`": `"$($ns.Name):item/$id`"`r`n  }`r`n}`r`n"
@@ -4094,16 +4102,9 @@ function Ensure-ClientItems {
 
 function Install-WrapperFromTowwOrMdk {
     param([string]$Root)
-    # Prefer the station NeoForge 26.2 generator MDK (canonical), then legacy MDK/completed ports.
+    # Use the station NeoForge 26.2 generator MDK as the sole wrapper authority.
     $candidates = @(
-        'C:\gokuai\Data\Neoforge26.2generatortemplate',
-        'F:\rob_projects\Minecraft_AI_Workstation\knowledge\neoforge\mdks\MDK-26.2-ModDevGradle',
-        'F:\rob_projects\Completed\GrokBuild_MF\Completed_Projects\Java\26.2\Gradle_Workspaces\TheOneWhoWatches-26.2',
-        'F:\rob_projects\Completed\GrokBuild_MF\Completed_Projects\Java\26.2\Gradle_Workspaces\Friend-26.2',
-        'F:\rob_projects\Completed\GrokBuild_MF\Completed_Projects\Java\26.2\Gradle_Workspaces\The_Knocker\the_knocker-1.5.2-neoforge-1.21.8-26.2',
-        'F:\Grok Build Apps\TheOneWhoWatches-26.2',
-        'H:\GrokBuild Master Folder\Completed Projects\Java\26.2\Friend-26.2',
-        'H:\GrokBuild Master Folder\Completed Projects\Java\26.2\The Knocker\the_knocker-1.5.2-neoforge-1.21.8-26.2'
+        'C:\GokuCodexAI\Data\Neoforge26.2generatortemplate'
     )
     foreach ($ref in $candidates) {
         if ((Test-Path (Join-Path $ref 'gradlew.bat')) -and (Test-Path (Join-Path $ref 'gradle\wrapper'))) {
@@ -4118,31 +4119,8 @@ function Install-WrapperFromTowwOrMdk {
     Write-Warn2 'No wrapper reference found - run gradle wrapper manually'
 }
 
-function Invoke-SolvedTransformDispatcher {
-    [CmdletBinding()]
-    param([string]$Root, $Profile, [string]$ModId, $Meta)
-
-    $known = @('custom-block-registration','client-package-moves','cutout-render-type','submit-custom-geometry','fusion-official')
-    $requested = @($Profile.SolvedTransforms | Where-Object { $_ } | Select-Object -Unique)
-    $unknown = @($requested | Where-Object { $known -notcontains $_ })
-    if ($unknown.Count) { throw "Unknown solved transform(s): $($unknown -join ', ')" }
-
-    $touched = 0
-    foreach ($name in $requested) {
-        switch ($name) {
-            'custom-block-registration' { $touched += Invoke-RegistryTemplatePass -Root $Root }
-            'client-package-moves'       { $touched += Invoke-MinecraftEntitySubpackageRemapPass -Root $Root }
-            'cutout-render-type'         { # Executed by the mechanical Java/resource pass; validate its prerequisite.
-                                           if (-not (Test-MigrationPass $Profile 'mechanical-java')) { throw 'cutout-render-type requires mechanical-java' } }
-            'submit-custom-geometry'     { $result = Invoke-SubmitCustomGeometryPass -Root $Root -Meta $Meta; $touched += [int]$result.touched }
-            'fusion-official'            { # Resolved by the dependency pipeline; require the generated build file.
-                                           if (-not (Test-Path -LiteralPath (Join-Path $Root 'build.gradle'))) { throw 'fusion-official requires generated build.gradle' } }
-        }
-    }
-    return [pscustomobject]@{ Requested=@($requested); Applied=@($requested); Unknown=@(); Touched=$touched }
-}
-
 # -------------------- main --------------------
+function Invoke-LegacyConversionMain {
 $Source = (Resolve-Path -LiteralPath $Path).Path
 if (-not (Test-Path (Join-Path $Source 'src'))) { throw "No src/ under $Source" }
 $sourceProfile = Get-SourceProfile -Root $Source -VersionOverride $SourceVersion
@@ -4346,12 +4324,9 @@ if ($m121 -gt 0) {
     Write-Ok "Post-MCreator compile-repair-touched $compile262b Java file(s)"
 }
 
-Write-Step 'MCreator residue pass (overlay, food, SavedData, effects, NBT; 1.20.1 and 1.21.x)'
-# These are target-26.2 API repairs. Completed NeoForge 1.21.4 conversions prove
-# they are also required on the 1.21.x route.
-$runMcreatorResidue = (Test-MigrationPass $sourceProfile 'mcreator-1.20.1') -or (Test-MigrationPass $sourceProfile 'mcreator-1.21.x')
-$m120 = if ($runMcreatorResidue) { Invoke-McreatorForge1201ResiduePass -Root $OutputPath } else { 0 }
-Write-Ok "MCreator-residue-touched $m120 Java file(s)"
+Write-Step 'MCreator 1.20.1 residue pass (overlay, food, SavedData, effects; MCP-verified SRG)'
+$m120 = if (Test-MigrationPass $sourceProfile 'mcreator-1.20.1') { Invoke-McreatorForge1201ResiduePass -Root $OutputPath } else { 0 }
+Write-Ok "1.20.1-residue-touched $m120 Java file(s)"
 
 Write-Step 'ModConfigSpec order pass (define-before-build; prevents world-join disconnect)'
 $cfg = if (Test-MigrationPass $sourceProfile 'config-order') { Invoke-ModConfigSpecOrderPass -Root $OutputPath } else { 0 }
@@ -4377,6 +4352,9 @@ Write-Step 'EventBusSubscriber -> explicit addListener bootstrap'
 $e = if (Test-MigrationPass $sourceProfile 'event-bus') { Invoke-EventBusSubscriberPass -Root $OutputPath -Meta $meta } else { 0 }
 Write-Ok "Event-bus pass touched $e unit(s) (classes + LegacyEventBootstrap)"
 
+Write-Step 'Solved-conversion semantic overlays (final; after rewrite passes)'
+$solvedOverlays = Apply-SolvedConversionOverlays -Root $OutputPath -Profile $sourceProfile -ModId $meta.mod_id -ToolRoot $ToolRoot
+Write-Ok ("Overlays applied: {0}; files touched: {1}" -f ((@($solvedOverlays.Overlays) -join ', '), $solvedOverlays.Touched))
 
 Write-Step 'Restore assets/data (decompiled trees are often Java-only)'
 $assetsRestored = Restore-ModAssets -Source $Source -Dest $OutputPath -ModId $meta.mod_id -OriginalJarPath $OriginalJarPath
@@ -4385,10 +4363,6 @@ Write-Ok "Asset restore units: $assetsRestored"
 Write-Step 'Forge convention tags -> c: (biome is_cave unbound on world create)'
 $forgeTags = Invoke-ForgeConventionTagRewritePass -Root $OutputPath
 Write-Ok "Forge-tag-rewrite-touched $forgeTags file(s)"
-
-Write-Step '26.2 worldgen codecs: biome carvers, tree below-trunk provider, noise-router surface level'
-$worldgen262 = Invoke-Minecraft262WorldgenDataPass -Root $OutputPath
-Write-Ok "Worldgen-codec-touched $worldgen262 file(s)"
 
 Write-Step '26.2 recipe ingredients: {"item"/"tag"} objects -> id / #tag strings'
 $recipeIng = Invoke-Minecraft262RecipeIngredientPass -Root $OutputPath
@@ -4402,13 +4376,9 @@ Write-Step '26.2 item model parents + restore template_spawn_egg'
 $itemModels = Invoke-Minecraft262ItemModelPass -Root $OutputPath -ToolRoot $ToolRoot
 Write-Ok "Item-model-touched $itemModels file(s)"
 
-Write-Step 'Solved-conversion named transforms (validated dispatcher)'
-$solvedTransforms = Invoke-SolvedTransformDispatcher -Root $OutputPath -Profile $sourceProfile -ModId $meta.mod_id -Meta $meta
-Write-Ok ("Solved transforms: {0}; touched: {1}" -f ((@($solvedTransforms.Applied) -join ', '), $solvedTransforms.Touched))
-
-Write-Step 'Solved-conversion semantic overlays (true final source/resource mutation)'
-$solvedOverlays = Apply-SolvedConversionOverlays -Root $OutputPath -Profile $sourceProfile -ModId $meta.mod_id -ToolRoot $ToolRoot
-Write-Ok ("Overlays applied: {0}; files touched: {1}" -f ((@($solvedOverlays.Overlays) -join ', '), $solvedOverlays.Touched))
+Write-Step '26.2 tree configured_feature dirt_provider -> below_trunk_provider'
+$treeCf = Invoke-Minecraft262TreeConfiguredFeaturePass -Root $OutputPath
+Write-Ok "Tree-configured-feature-touched $treeCf file(s)"
 
 Write-Step 'Gradle wrapper'
 Install-WrapperFromTowwOrMdk -Root $OutputPath
@@ -4449,7 +4419,7 @@ $report = @"
    ``noCollission``->``noCollision``, ``GuiGraphics``->``GuiGraphicsExtractor``, container ``renderBg``->``extractBackground``,
    final ``imageWidth``/``imageHeight`` via ``super(..., w, h)``, ``keyPressed(KeyEvent)``, ``isClientSide()``,
    remove ``Tuple`` work-queue, stub broken ``ItemHandler.ITEM/ENTITY`` capability binds
-10. **ModConfigSpec order pass** (define-before-build) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â prevents world-join disconnect from decompiled MCreator configs
+10. **ModConfigSpec order pass** (define-before-build) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â prevents world-join disconnect from decompiled MCreator configs
 11. Registry templates (createEntities / Registries.SOUND_EVENT / createItems / createBlocks)
 12. ``@Mod`` constructor injection template (IEventBus + ModContainer)
 13. ``@Mod.EventBusSubscriber`` -> ``LegacyEventBootstrap`` + ``addListener`` registrations
@@ -4461,7 +4431,7 @@ $report = @"
 
 - Conversion success means a **scaffold** was written. It does **not** mean the mod is loadable yet.
 - Only install jars produced by ``gradlew build`` from this output (``build/libs/*.jar``).
-- Never rename the input 1.20.1 / 1.21.x jar and treat it as a 26.2 mod ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â NeoForge will reject old ``versionRange`` pins.
+- Never rename the input 1.20.1 / 1.21.x jar and treat it as a 26.2 mod ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â NeoForge will reject old ``versionRange`` pins.
 
 ## What you must still fix manually
 
@@ -4512,8 +4482,8 @@ if ($Compile) {
             Write-Warn2 "Gradle build failed (exit $compileExit). Scaffold is still written."
             Write-Warn2 "See compile-errors.log in the output folder for details."
             try {
-                $repairPrompt = Write-GrokRepairPrompt -FailedOutput $OutputPath -DestinationJavaMajor 25 -TargetMinecraft $MinecraftVersion
-                Write-Ok "Wrote Repair-in-Codex prompt (destination Java pin): $repairPrompt"
+                $repairRequest = Write-CodexRepairRequest -FailedOutput $OutputPath -DestinationJavaMajor 25 -TargetMinecraft $MinecraftVersion
+                Write-Ok "Wrote GokuCodexAI repair request (destination Java pin): $repairRequest"
             } catch {
                 Write-Warn2 "Could not write CODEX_REPAIR_REQUEST.md: $($_.Exception.Message)"
             }
@@ -4545,3 +4515,8 @@ if ($Compile -and $compileExit -ne 0) {
 }
 # Always exit 0 after successful scaffold so GUI does not report hard failure for diagnostic compile
 exit 0
+}
+
+if ($env:LEGACY_CONVERTER_LOAD_ONLY -ne '1') {
+    Invoke-LegacyConversionMain
+}

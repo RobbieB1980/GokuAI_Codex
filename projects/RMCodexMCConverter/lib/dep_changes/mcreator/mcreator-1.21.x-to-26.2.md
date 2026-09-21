@@ -33,4 +33,4 @@
 - Solved: CASE-003 Mel's DeCo 1.21.4, REN-004, LEARNINGS Band A, MOAdecor BATH 1.21.8, CASE-005 gecko_kings_avp_mod 1.21.1 (compile-green)
 - Station upstream: `knowledge/_upstream/mcreator` @ see `_STATUS.json`
 - Catalog: `MCreator-generator-delta-catalog.md`
-- 262-repair retrieval tree (outside converter): `C:\gokuai\Data\262r`
+- 262-repair retrieval tree (outside converter): `C:\GokuCodexAI\Data\262r`

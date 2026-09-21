@@ -1,9 +1,10 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
 $repo = Resolve-Path (Join-Path $PSScriptRoot '..')
 . (Join-Path $repo 'lib\ConversionCore.ps1')
+. (Join-Path $repo 'lib\Minecraft262HardenedTransforms.ps1')
 
 $script:passed = 0
 function Assert-Equal([object]$Actual, [object]$Expected, [string]$Name) {
@@ -29,6 +30,9 @@ $routeCases = @(
 )
 Assert-Equal (ConvertTo-NormalizedMinecraftVersion 'neoforge-26.2.0.72') '26.2.0.72' 'four-part NeoForge version normalization'
 Assert-Equal (ConvertTo-NormalizedMinecraftVersion '[26.1.0.9,26.2)') '26.1.0.9' 'four-part NeoForge range normalization'
+Assert-Equal (ConvertTo-NormalizedMinecraftVersion '26.2') '26.2' 'two-part target normalization'
+Assert-Equal (ConvertTo-NormalizedMinecraftVersion 'minecraft 1.21.11') '1.21.11' 'three-part Minecraft normalization'
+Assert-Equal (ConvertTo-NormalizedMinecraftVersion '126.2.0.72') '' 'embedded numeric token rejected'
 foreach ($case in $routeCases) {
     Assert-Equal (Get-MigrationRoute -SourceVersion $case[0] -Loader $case[1]) $case[2] "route $($case[0])"
 }
@@ -67,93 +71,121 @@ finally {
     if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture -Recurse -Force }
 }
 
-# Solved-conversion contract: declared passes, rules, transforms, and overlay ordering must be live.
-$solvedIndex = Get-SolvedConversionIndex
-$solvedBase = [pscustomobject]@{
-    SchemaVersion=1; SourceVersion='1.21.4'; Loader='neoforge'; Framework='mcreator'; Confidence='high';
-    Route='neoforge-1.21.x'; RecommendedPasses=@(Get-RecommendedMigrationPasses -Route 'neoforge-1.21.x');
-    ApiFeatures=@(); Evidence=@()
-}
-$solvedProfile = Merge-SolvedConversionsIntoProfile -Profile $solvedBase -ModId 'thenewherobrinemod' -Index $solvedIndex
-Assert-True (@($solvedProfile.SolvedRules) -contains 'entity-render-state') 'NewHerobrine forceRules merged into profile'
-Assert-True (@($solvedProfile.SolvedTransforms) -contains 'custom-block-registration') 'NewHerobrine transforms merged into profile'
-Assert-True (@($solvedProfile.AppliedSolutions.Id) -contains 'CASE-007-new-herobrine-1.21.4') 'NewHerobrine solved case matched'
-$woodlandsBase = [pscustomobject]@{
-    SchemaVersion=1; SourceVersion='1.21.1'; Loader='neoforge'; Framework='mcreator'; Confidence='high';
-    Route='neoforge-1.21.x'; RecommendedPasses=@(Get-RecommendedMigrationPasses -Route 'neoforge-1.21.x');
-    ApiFeatures=@(); Evidence=@()
-}
-$woodlandsProfile = Merge-SolvedConversionsIntoProfile -Profile $woodlandsBase -ModId 'woodlands' -Index $solvedIndex
-Assert-True (@($woodlandsProfile.AppliedSolutions.Id) -contains 'CASE-008-woodlands-1.21.1') 'Woodlands solved case matched'
-Assert-True (Test-Path -LiteralPath (Join-Path $repo 'lib\overlays\woodlands\1.21.1.zip') -PathType Leaf) 'Woodlands verified overlay packaged'
-$woodlandsCase = @($solvedIndex.solutions | Where-Object id -eq 'CASE-008-woodlands-1.21.1')[0]
-Assert-True (@($woodlandsCase.overlays[0].deletePaths) -contains 'src/main/java/net/mcreator/woodlands/init/WoodlandsModTrades.java') 'Woodlands obsolete Java deletion declared'
-$overlayFixture = Join-Path ([IO.Path]::GetTempPath()) ('woodlands-overlay-test-' + [guid]::NewGuid().ToString('N'))
-try {
-    $required = Join-Path $overlayFixture 'src\main\java\net\mcreator\woodlands\WoodlandsMod.java'
-    $obsoleteTrade = Join-Path $overlayFixture 'src\main\java\net\mcreator\woodlands\init\WoodlandsModTrades.java'
-    $obsoleteDimension = Join-Path $overlayFixture 'src\main\java\net\mcreator\woodlands\world\dimension\WoodLandDimension.java'
-    New-Item -ItemType Directory -Path (Split-Path $required),(Split-Path $obsoleteTrade),(Split-Path $obsoleteDimension) -Force | Out-Null
-    Set-Content -LiteralPath $required -Value 'class WoodlandsMod {}'
-    Set-Content -LiteralPath $obsoleteTrade -Value 'class WoodlandsModTrades {}'
-    Set-Content -LiteralPath $obsoleteDimension -Value 'class WoodLandDimension {}'
-    $overlayResult = Apply-SolvedConversionOverlays -Root $overlayFixture -Profile $woodlandsProfile -ModId 'woodlands' -ToolRoot $repo -Index $solvedIndex
-    Assert-True (-not (Test-Path -LiteralPath $obsoleteTrade)) 'Woodlands overlay deletes obsolete trade subscriber'
-    Assert-True (-not (Test-Path -LiteralPath $obsoleteDimension)) 'Woodlands overlay deletes obsolete dimension effects class'
-    Assert-True (@($overlayResult.Overlays) -contains 'woodlands/1.21.1.zip') 'Woodlands overlay applied in deletion fixture'
-    $fortress = Get-Content -LiteralPath (Join-Path $overlayFixture 'src\main\resources\data\woodlands\worldgen\structure\ruined_fortress.json') -Raw | ConvertFrom-Json
-    $statue = Get-Content -LiteralPath (Join-Path $overlayFixture 'src\main\resources\data\woodlands\worldgen\structure\wooden_statue.json') -Raw | ConvertFrom-Json
-    Assert-Equal $fortress.project_start_to_heightmap 'WORLD_SURFACE_WG' 'Woodlands fortress projects to 26.2 world surface'
-    Assert-Equal $fortress.step 'raw_generation' 'Woodlands fortress uses verified generation phase'
-    Assert-Equal $statue.project_start_to_heightmap 'WORLD_SURFACE_WG' 'Woodlands statue projects to 26.2 world surface'
-    Assert-Equal $statue.step 'raw_generation' 'Woodlands statue uses verified generation phase'
-}
-finally {
-    if (Test-Path -LiteralPath $overlayFixture) { Remove-Item -LiteralPath $overlayFixture -Recurse -Force }
-}
-$worldgenFixture = Join-Path ([IO.Path]::GetTempPath()) ('worldgen-262-test-' + [guid]::NewGuid().ToString('N'))
-try {
-    $biomeDir = Join-Path $worldgenFixture 'src\main\resources\data\example\worldgen\biome'
-    $treeDir = Join-Path $worldgenFixture 'src\main\resources\data\example\worldgen\configured_feature'
-    $dimensionDir = Join-Path $worldgenFixture 'src\main\resources\data\example\dimension'
-    New-Item -ItemType Directory -Path $biomeDir,$treeDir,$dimensionDir -Force | Out-Null
-    Set-Content -LiteralPath (Join-Path $biomeDir 'test.json') -Value '{"carvers":{},"features":[]}'
-    Set-Content -LiteralPath (Join-Path $treeDir 'test.json') -Value '{"type":"minecraft:tree","config":{"dirt_provider":{"type":"minecraft:simple_state_provider","state":{"Name":"minecraft:oak_planks"}}}}'
-    Set-Content -LiteralPath (Join-Path $dimensionDir 'test.json') -Value '{"generator":{"settings":{"noise_router":{"barrier":0}}}}'
-    Assert-Equal (Invoke-Minecraft262WorldgenDataPass -Root $worldgenFixture) 3 'Woodlands worldgen codec fixture touched'
-    $biome = Get-Content -LiteralPath (Join-Path $biomeDir 'test.json') -Raw | ConvertFrom-Json
-    $tree = Get-Content -LiteralPath (Join-Path $treeDir 'test.json') -Raw | ConvertFrom-Json
-    $dimension = Get-Content -LiteralPath (Join-Path $dimensionDir 'test.json') -Raw | ConvertFrom-Json
-    Assert-Equal @($biome.carvers).Count 0 'empty biome carvers object becomes array'
-    Assert-Equal $tree.config.below_trunk_provider.type 'minecraft:rule_based_state_provider' 'tree below-trunk provider added'
-    Assert-Equal $tree.config.below_trunk_provider.rules[0].then.state.Name 'minecraft:oak_planks' 'tree custom dirt provider preserved'
-    Assert-True ($dimension.generator.settings.noise_router.PSObject.Properties.Name -contains 'preliminary_surface_level') 'noise-router preliminary surface level added'
-}
-finally {
-    if (Test-Path -LiteralPath $worldgenFixture) { Remove-Item -LiteralPath $worldgenFixture -Recurse -Force }
-}
-$knownTransforms = @('custom-block-registration','client-package-moves','cutout-render-type','submit-custom-geometry','fusion-official')
-$declaredTransforms = @($solvedIndex.solutions.transforms) + @($solvedIndex.bandDefaults.transforms) | Where-Object { $_ } | Select-Object -Unique
-foreach ($transform in $declaredTransforms) { Assert-True ($knownTransforms -contains $transform) "known solved transform $transform" }
-$knownRules = @(Get-PrimerMigrationRules -SourceVersion '1.20.1')
-$declaredRules = @($solvedIndex.solutions.forceRules) + @($solvedIndex.bandDefaults.forceRules) | Where-Object { $_ } | Select-Object -Unique
-foreach ($rule in $declaredRules) { Assert-True ($knownRules -contains $rule) "known solved rule $rule" }
-$converterText = Get-Content -LiteralPath (Join-Path $repo 'Convert-Forge1201-ToNeoForge262.ps1') -Raw
-Assert-True ($converterText.Contains("LivingEntity.getSlotForHand(context.getHand())', 'context.getHand()")) 'Woodlands InteractionHand repair hardened'
-Assert-True ($converterText.Contains("import net.minecraft.BlockUtil.FoundRectangle;', 'import net.minecraft.util.BlockUtil.FoundRectangle;")) 'Woodlands BlockUtil package repair hardened'
-Assert-True ($converterText -match 'Get-PrimerMigrationRules[^\r\n]+Profile\.SolvedRules') 'exact primer execution consumes SolvedRules'
-Assert-True ($converterText -match 'function Invoke-MinecraftEntitySubpackageRemapPass' -and $converterText.Contains('Invoke-MinecraftEntitySubpackageRemapPass -Root $Root')) 'client-package-moves dispatcher target exists'
-Assert-True ($converterText.IndexOf("Solved-conversion named transforms") -lt $converterText.IndexOf("Solved-conversion semantic overlays")) 'transforms execute before overlays'
-Assert-True ($converterText.IndexOf("Solved-conversion semantic overlays") -gt $converterText.IndexOf("Item-model-touched")) 'overlays are the final source/resource mutation'
-
 $sample = 'BLOCKS.register(name, block)'
 Assert-Equal (Convert-CustomBlockRegistrationText $sample) $sample 'unmatched block helper unchanged'
 
-foreach ($file in Get-ChildItem -LiteralPath $repo -Recurse -Filter '*.ps1' -File) {
+$hardenedFixtures = Join-Path $repo 'tests\fixtures\hardened-262'
+$leafInput = Get-Content (Join-Path $hardenedFixtures 'leaf-api\input.java') -Raw
+$leafExpected = (Get-Content (Join-Path $hardenedFixtures 'leaf-api\expected.java') -Raw).TrimEnd()
+$leafActual = Convert-Minecraft262LeafApiText -Text $leafInput
+Assert-Equal $leafActual $leafExpected 'installed leaf API wave'
+Assert-Equal (Convert-Minecraft262LeafApiText -Text $leafActual) $leafActual 'leaf API wave idempotence'
+
+$treeInput = Get-Content (Join-Path $hardenedFixtures 'tree-feature\input.json') -Raw
+$treeActual = Convert-Minecraft262TreeConfiguredFeatureDocument -JsonText $treeInput
+$treeDocument = $treeActual | ConvertFrom-Json
+Assert-Equal $treeDocument.type 'minecraft:tree' 'tree configured feature type preserved'
+Assert-Equal $treeDocument.custom_flag 'preserve-me' 'tree configured feature unrelated property preserved'
+Assert-Equal $treeDocument.config.below_trunk_provider.type 'minecraft:rule_based_state_provider' 'tree below-trunk provider created'
+Assert-Equal $treeDocument.config.below_trunk_provider.rules[0].then.state.Name 'minecraft:podzol' 'tree dirt state preserved'
+Assert-True ($null -eq $treeDocument.config.PSObject.Properties['dirt_provider']) 'legacy dirt provider removed'
+Assert-True ($null -eq $treeDocument.config.PSObject.Properties['force_dirt']) 'legacy force_dirt removed'
+Assert-Equal (Convert-Minecraft262TreeConfiguredFeatureDocument -JsonText $treeActual) $treeActual 'tree configured feature idempotence'
+
+$clientItemInput = Get-Content (Join-Path $hardenedFixtures 'client-item\input.json') -Raw
+$clientItemActual = Convert-Minecraft262ClientItemDocument -JsonText $clientItemInput -ModId 'example'
+$clientItemDocument = $clientItemActual | ConvertFrom-Json
+Assert-Equal $clientItemDocument.model.model 'example:item/template_spawn_egg' 'client item spawn egg migrated'
+Assert-Equal $clientItemDocument.comment 'minecraft:item/template_spawn_egg' 'unrelated spawn egg string preserved'
+Assert-Equal (Convert-Minecraft262ClientItemDocument -JsonText $clientItemActual -ModId 'example') $clientItemActual 'client item spawn egg idempotence'
+
+$versionPropsPath = Join-Path $repo 'eng\Version.props'
+$portableManifestPath = Join-Path $repo 'eng\portable-manifest.json'
+$portableValidatorPath = Join-Path $repo 'scripts\Test-PortableManifest.ps1'
+Assert-True (Test-Path -LiteralPath $versionPropsPath) 'shared version properties exist'
+Assert-True (Test-Path -LiteralPath $portableManifestPath) 'portable manifest exists'
+Assert-True (Test-Path -LiteralPath $portableValidatorPath) 'portable manifest validator exists'
+
+[xml]$versionProps = Get-Content -LiteralPath $versionPropsPath -Raw
+Assert-Equal $versionProps.Project.PropertyGroup.Version '3.0.0' 'shared product version'
+Assert-Equal $versionProps.Project.PropertyGroup.FileVersion '3.0.0.0' 'shared file version'
+Assert-Equal $versionProps.Project.PropertyGroup.InformationalVersion '3.0.0' 'shared informational version'
+Assert-Equal $versionProps.Project.PropertyGroup.IncludeSourceRevisionInInformationalVersion 'false' 'product version excludes source revision suffix'
+foreach ($projectPath in @('src\RB.LegacyJavaConverter\RB.LegacyJavaConverter.csproj', 'src\RB.LegacyJavaConverter.Setup\RB.LegacyJavaConverter.Setup.csproj')) {
+    [xml]$project = Get-Content -LiteralPath (Join-Path $repo $projectPath) -Raw
+    $versionImport = @($project.Project.Import | Where-Object { $_.Project -eq '..\..\eng\Version.props' })
+    Assert-Equal $versionImport.Count 1 "shared version import $projectPath"
+    Assert-True ($null -eq $project.Project.PropertyGroup.Version) "no literal product version $projectPath"
+}
+Assert-Equal ((Get-Content -LiteralPath (Join-Path $repo 'version.txt') -Raw).Trim()) '3.0.0' 'tracked version matches shared product version'
+
+$releaseMetadataPath = Join-Path $repo 'lib\ReleaseMetadata.ps1'
+Assert-True (Test-Path -LiteralPath $releaseMetadataPath) 'release metadata helper exists'
+. $releaseMetadataPath
+$releaseIdentity = Get-ReleaseIdentity -VersionPropsPath $versionPropsPath
+Assert-Equal $releaseIdentity.Tag 'v3.0.0' 'release tag derives from shared product version'
+Assert-Equal $releaseIdentity.Name 'RB Legacy Java Converter 3.0.0' 'release name derives from shared product version'
+$mainFormText = Get-Content -LiteralPath (Join-Path $repo 'src\RB.LegacyJavaConverter\MainForm.cs') -Raw
+$setupFormText = Get-Content -LiteralPath (Join-Path $repo 'src\RB.LegacyJavaConverter.Setup\SetupForm.cs') -Raw
+Assert-True ($mainFormText -match '\?\? "3\.0\.0"') 'GUI fallback version is 3.0.0'
+Assert-True ($setupFormText -notmatch '2\.10\.9') 'installer has no stale 2.10.9 fallback'
+Assert-True (([regex]::Matches($setupFormText, '\?\? "3\.0\.0"')).Count -eq 3) 'installer fallback versions are 3.0.0'
+$readmeText = Get-Content -LiteralPath (Join-Path $repo 'README.md') -Raw
+Assert-True ($readmeText -match 'baseline: 3\.0\.0 \(NeoForge 26\.2\)') 'README reports 3.0.0 baseline'
+$usageText = Get-Content -LiteralPath (Join-Path $repo 'docs\USAGE.md') -Raw
+Assert-True ($usageText -match '26\.2\.0\.72') 'usage guide pins current NeoForge build'
+Assert-True ($usageText -notmatch '26\.2\.0\.66') 'usage guide excludes stale NeoForge build'
+
+$portableManifest = Get-Content -LiteralPath $portableManifestPath -Raw | ConvertFrom-Json
+$manifestSources = @($portableManifest.entries | ForEach-Object { $_.sourcePath })
+foreach ($requiredSource in @(
+    'Convert-Forge1201-ToNeoForge262.ps1', 'Convert-JarToProject.ps1', 'Convert-OldJarToNeoForge262.ps1',
+    'Open-CodexRepairSession.ps1', 'Open-GrokRepairSession.ps1', 'Build-WithDestinationJava.ps1', 'Lint-MigrationSkills.ps1',
+    'scripts/Sync-CodexConverterWorkspace.ps1', 'scripts/Sync-GokuaiConverterWorkspace.ps1', 'gokuai-workspace-overlay',
+    'lib/SolvedConversionIndex.json', 'lib/SolutionsIndex.ps1', 'lib/PrimerChangeIndex.json', 'lib/DependencyCatalog.json',
+    'lib/overlays', 'lib/client-items', 'lib/primer_changes', 'lib/dep_changes', 'docs'
+)) {
+    Assert-True ($manifestSources -contains $requiredSource) "portable manifest source $requiredSource"
+}
+$appProjectText = Get-Content -LiteralPath (Join-Path $repo 'src\RB.LegacyJavaConverter\RB.LegacyJavaConverter.csproj') -Raw
+Assert-True ($appProjectText -match 'Open-CodexRepairSession\.ps1') 'application packages native Codex launcher'
+Assert-True ($appProjectText -match 'Sync-CodexConverterWorkspace\.ps1') 'application packages native workspace sync'
+$releaseBuildText = Get-Content -LiteralPath (Join-Path $repo 'scripts\Build-Release.ps1') -Raw
+Assert-True ($releaseBuildText -match 'Open-CodexRepairSession\.ps1') 'release build copies native Codex launcher'
+Assert-True ($releaseBuildText -match 'Sync-CodexConverterWorkspace\.ps1') 'release build copies native workspace sync'
+Assert-True ($releaseBuildText -notmatch 'Fix-in-Grok|C:\\gokuai') 'release build has no active legacy repair instructions'
+$releasePublishText = Get-Content -LiteralPath (Join-Path $repo 'scripts\Publish-GitHubRelease.ps1') -Raw
+Assert-True ($releasePublishText -match 'Repair with GokuCodexAI') 'release notes describe native repair action'
+Assert-True ($releasePublishText -notmatch 'Fix-in-Grok|C:\\gokuai') 'release notes have no active legacy repair requirement'
+
+$manifestFixture = Join-Path ([IO.Path]::GetTempPath()) ('legacy-portable-manifest-test-' + [guid]::NewGuid().ToString('N'))
+try {
+    New-Item -ItemType Directory -Path $manifestFixture -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $manifestFixture 'version.txt') -Value '3.0.0' -Encoding ASCII
+    $previousErrorAction = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $validatorOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $portableValidatorPath -Root $manifestFixture -ManifestPath $portableManifestPath -Layout Portable 2>&1 | Out-String
+        $validatorExit = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorAction
+    }
+    Assert-True ($validatorExit -ne 0) 'portable validator rejects incomplete layout'
+    Assert-True ($validatorOutput -match 'RB-Legacy-Java-Converter.exe') 'portable validator reports missing executable'
+}
+finally {
+    if (Test-Path -LiteralPath $manifestFixture) { Remove-Item -LiteralPath $manifestFixture -Recurse -Force }
+}
+
+$powerShellSources = @(& git -C $repo ls-files --cached --others --exclude-standard -- '*.ps1')
+if ($LASTEXITCODE -ne 0) { throw 'Could not enumerate repository PowerShell sources with git ls-files' }
+foreach ($relativePath in $powerShellSources) {
+    $file = Get-Item -LiteralPath (Join-Path $repo ($relativePath -replace '/', '\'))
     $tokens = $null
     $errors = $null
     [Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
-    Assert-Equal @($errors).Count 0 "PowerShell parse $($file.Name)"
+    Assert-Equal @($errors).Count 0 "PowerShell parse $relativePath"
 }
 
 foreach ($file in @('Convert-Forge1201-ToNeoForge262.ps1','Convert-JarToProject.ps1','Convert-OldJarToNeoForge262.ps1','lib\ModDependencyPipeline.ps1')) {

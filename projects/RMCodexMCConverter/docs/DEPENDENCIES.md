@@ -26,7 +26,7 @@ For each detected dependency (including optional / import-detected soft deps suc
 
 | Artifact | Destination | Purpose |
 |----------|-------------|---------|
-| Source MC version (e.g. 1.21.4) | `libs-source/` + `tools/lib/dep-cache/<version>/` | Evidence for API deltas / Fix-in-Grok |
+| Source MC version (e.g. 1.21.4) | `libs-source/` + `tools/lib/dep-cache/<version>/` | Evidence for API deltas / GokuCodexAI repair |
 | Target **26.2** | `libs/` + `tools/lib/dep-cache/26.2/` | Compile + runtime classpath |
 
 If only the source jar exists, it is still saved and reported (`source-downloaded`). Conversion of required deps without a 26.2 official jar uses that source jar.

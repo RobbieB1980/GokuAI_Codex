@@ -1,67 +1,52 @@
-# GokuAI Codex
+# GokuCodexAI
 
-Clean control plane for a persistent local GokuAI orchestrator with local
-llama.cpp workers and Codex/ChatGPT as the senior escalation engine.
+Codex-first control plane for faithful Legacy Java Converter repair. Codex owns
+the evidence, repair strategy, integration, and validation cycle. Local KAT and
+Qwen models are optional bounded workers; their absence or failure never blocks
+Codex from continuing the repair.
 
-The original `C:\gokuai` repository is an external, read-only asset store.
-This repository never writes to `C:\gokuai\.git` and does not duplicate model
-weights or knowledge databases.
+The configured orchestrator is Luna High (`gpt-5.6-luna-high`, high reasoning).
+Hard issues, repeated failures, conflicting evidence, and orchestrator failures
+fall back to Sol Medium (`gpt-5.6-sol-medium`, medium reasoning).
+
+Everything required by the active control plane is rooted beneath
+`C:\GokuCodexAI`. The preserved earlier tree is not an active dependency.
+
+## Repair order
+
+1. Run deterministic conversion and retain its evidence packet.
+2. Consult the executable Solutions Index and hardened fixes.
+3. Ground changes in exact-version NeoForge 26.2 sources and mappings.
+4. Apply Java/Gradle AST repair only when earlier stages are insufficient.
+5. Preserve assets, models, items, entities, AI, and behaviour.
+6. Optionally ask KAT or Qwen one bounded question; Codex reviews the result.
+7. Report build, launch, registry/data, content, and behaviour gates separately.
 
 ## Runtime layout
 
-- Primary worker: `C:\gokuai\models\kat-reap50-Q6_K.gguf` (`goku-code`)
-- Fast worker: `C:\gokuai\models\Nemotron-9B-OpenCode.Q8_0.gguf` (`goku-fast`)
-- Runtime: `C:\gokuai\runtime\llama.cpp\llama-server.exe`
-- Knowledge root: `C:\gokuai\Data`
-- Active-index pointer: `C:\gokuai\DataIndex\minecraft-knowledge\_ACTIVE_DB.txt`
-
-Both workers use all GPU layers, no CPU MoE offload, Q8 KV cache, flash
-attention, and llama.cpp `ngram-cache` speculative decoding.
-
-## Routing order
-
-1. Check hardened fixes in `Data\Solved_Problems`.
-2. Query compact, version-aware primer evidence.
-3. Ground target-version claims in exact-version sources.
-4. Ask the selected local worker to resolve the bounded issue.
-5. Escalate unresolved or uncertain issues to Sol Medium.
-6. Use Sol High only for repeated failure, conflicting evidence,
-   multi-version architecture, subtle runtime bugs, or Medium uncertainty.
+- Root: `C:\GokuCodexAI`
+- Knowledge: `C:\GokuCodexAI\Data`
+- Active index: `C:\GokuCodexAI\DataIndex\minecraft-knowledge-local\_ACTIVE_DB.txt`
+- Optional KAT worker: `models\kat-reap50-Q6_K.gguf`
+- Optional Qwen reviewer: `models\Qwen3.8-27B-Q4_K_M.gguf`
 
 ## Commands
 
 ```powershell
 .\Validate-GokuAI.ps1
+.\Update-GokuKnowledge.ps1
 .\Start-GokuBackend.ps1
-.\Start-GokuBackend.ps1 -ForceRestart
+.\Switch-GokuWorker.ps1 -Profile qwen38
 .\Stop-GokuBackend.ps1
 ```
 
-## Refresh Minecraft knowledge
+## Legacy Java Converter
 
-Run the complete source, mapping, search-index, and validation pipeline manually:
+Conversion failures write `CODEX_REPAIR_REQUEST.md`. The **Repair with
+GokuCodexAI** button opens the failed output in Codex, where the bundled
+`legacy-java-converter-vnext` skill governs deterministic-first repair,
+preservation, and independent runtime validation.
 
-```powershell
-.\Update-GokuKnowledge.ps1
-```
-
-The default refresh includes Mojang releases and snapshots, downloads both client and server mapping files, retains the client JAR, and leaves the larger dedicated-server JAR excluded. Upstream Git repositories and verified Mojang files update incrementally; derived databases switch through validated active pointers so the last known-good databases remain available after a failure.
-
-Options:
-
-```powershell
-.\Update-GokuKnowledge.ps1 -ReleaseOnly        # exclude snapshots
-.\Update-GokuKnowledge.ps1 -IncludeServerJar  # also retain the dedicated-server JAR
-.\Update-GokuKnowledge.ps1 -SkipSourceUpdate  # rebuild indexes from current local sources
-```
-
-Each run writes a JSON report under `logs\knowledge-update`. A failed required stage returns a non-zero exit code and the report identifies the failing stage and retained active databases. The updater does not create or modify a Windows scheduled task.
-
-
-## RMCodexMCConverter
-
-Source: `C:\GokuCodexAI\projects\RMCodexMCConverter`
-
-Local self-contained build: `C:\GokuCodexAI\artifacts\RMCodexMCConverter\RMCodexMCConverter.exe`
-
-Conversion failures write `CODEX_REPAIR_REQUEST.md` and the **Repair in Codex** button opens the failed output in Codex through `C:\GokuCodexAI\Open-CodexRepairSession.ps1`.
+`scripts\Sync-LegacyConverterWorkspace.ps1` consumes the converter's canonical
+Codex-native overlay and verifies `AGENTS.md`, `.agents\skills`, and
+`.codex\config.toml`. It does not copy legacy agent configuration.

@@ -1,0 +1,856 @@
+{
+  "schema": "goku-grounded-java-repair-stage3-v1",
+  "created": "2026-09-20T11:32:28.813671",
+  "index": "C:\\GokuCodexAI\\DataIndex\\goku-data.db",
+  "model": "huihui-qwen38-27b-abliterated-q4km",
+  "worker_label": "Huihui Qwen3.8 27B abliterated UD-DW Q4_K_M",
+  "modes": {
+    "production": {
+      "quality_score": 67.08,
+      "retrieval_recall": 94.0,
+      "mean_seconds": 51.485
+    },
+    "oracle": {
+      "quality_score": 69.42,
+      "retrieval_recall": 94.0,
+      "mean_seconds": 47.314
+    }
+  },
+  "tests": [
+    {
+      "test": "registry_port",
+      "mode": "production",
+      "weight": 18,
+      "ok": true,
+      "quality_score": 38.25,
+      "repair_score": 50.0,
+      "format_score": 0.0,
+      "retrieval_recall": 66.67,
+      "retrieval_hits": [
+        true,
+        true,
+        false
+      ],
+      "citation_score": 0.0,
+      "valid_citations": [],
+      "passages": [
+        {
+          "chunk_id": 14827,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/client/model/MultiLayerModelTest.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 30220,
+          "path": "Neoforge26.2generatortemplate/src/main/java/com/example/examplemod/Neoforge262modgenerator.java",
+          "family": "generator_template",
+          "versions": "26.2"
+        },
+        {
+          "chunk_id": 82231,
+          "path": "_upstream/neoforge_docs/docs/blocks/index.md",
+          "family": "upstream_neoforge",
+          "versions": "1.5"
+        },
+        {
+          "chunk_id": 14639,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/client/AmbientOcclusionElementsTest.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 14614,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/HideNeighborFaceTest.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 14603,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/FlowerPotTest.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        }
+      ],
+      "seconds": 53.242,
+      "usage": {
+        "completion_tokens": 2200,
+        "prompt_tokens": 2873,
+        "total_tokens": 5073,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "length",
+      "truncated": true,
+      "response": "```json\n{\n  \"diagnosis\": \"A Forge 1.20.1 mod uses the old `DeferredRegister<Block>` / `DeferredRegister<Item>` pattern with `DeferredBlock`/`DeferredItem` from `net.minecraftforge.registries`, registers via `RegisterEvent` on the mod bus, and creates `BlockItem` manually with `new BlockItem(block, new Item.Properties())`. For a NeoForge 26.x target this breaks because: (1) the package moved to `net.neoforged.neoforge.registries`; (2) the specialized `DeferredRegister.Blocks` and `DeferredRegister.Items` helpers replace the generic `DeferredRegister<T>`; (3) `DeferredRegister.createBlocks(MODID)` / `createItems(MODID)` are the factory methods; (4) `registerSimpleBlock` and `registerSimpleBlockItem` handle `setId` and `BlockItem` construction internally; (5) registration is done by calling `BLOCKS.register(modEventBus)` / `ITEMS.register(modEventBus)` in the `@Mod` constructor rather than subscribing to `RegisterEvent`; (6) the `@Mod` constructor signature is `(IEventBus modEventBus)`. Using the old Forge imports or the generic `DeferredRegister.create(Registries.BLOCK, MODID)` will not compile against NeoForge 26.x.\",\n  \"repair_plan\": [\n    \"Replace all `net.minecraftforge.registries.*` imports with `net.neoforged.neoforge.registries.*`.\",\n    \"Replace `DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK, MODID)` with `DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID)`.\",\n    \"Replace `DeferredRegister<Item> ITEMS = DeferredRegister.create(Registries.ITEM, MODID)` with `DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID)`.\",\n    \"Replace manual block registration (`BLOCKS.register(\\\"name\\\", () -> new Block(props))`) with `BLOCKS.registerSimpleBlock(\\\"name\\\", props -> props.mapColor(...))` or `BLOCKS.registerBlock(\\\"name\\\", Block::new, () -> props)` for custom subclasses.\",\n    \"Replace manual `BlockItem` creation (`ITEMS.register(\\\"name\\\", () -> new BlockItem(BLOCK.get(), new Item.Properties()))`) with `ITEMS.registerSimpleBlockItem(BLOCK_DEFERRED)` (one-arg) or `ITEMS.registerSimpleBlockItem(\\\"name\\\", BLOCK_DEFERRED)` (two-arg, explicit path).\",\n    \"Remove any `@SubscribeEvent` / `RegisterEvent` handler for registration. Instead, call `BLOCKS.register(modEventBus)` and `ITEMS.register(modEventBus)` directly in the `@Mod` constructor.\",\n    \"Ensure the `@Mod` class constructor accepts `IEventBus modEventBus` (from `net.neoforged.bus.api.IEventBus`).\",\n    \"Preserve all registry IDs (namespace:path) exactly as they were in the Forge 1.20.1 mod.\",\n    \"If a creative tab is needed, use `DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID)` and `BuildCreativeModeTabContentsEvent` on the mod bus.\"\n  ],\n  \"code_or_pseudocode\": \"package com.example.mymod;\\n\\nimport net.minecraft.world.item.BlockItem;\\nimport net.minecraft.world.item.CreativeModeTabs;\\nimport net.minecraft.world.level.block.Block;\\nimport net.minecraft.world.level.material.MapColor;\\nimport net.neoforged.bus.api.IEventBus;\\nimport net.neoforged.fml.common.Mod;\\nimport net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;\\nimport net.neoforged.neoforge.registries.DeferredBlock;\\nimport net.neoforged.neoforge.registries.DeferredItem;\\nimport net.neoforged.neoforge.registries.DeferredRegister;\\n\\n@Mod(Mymod.MODID)\\npublic class Mymod {\\n    public static final String MODID = \\\"mymod\\\";\\n\\n    // --- NeoForge 26.x specialized DeferredRegisters ---\\n    private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);\\n    private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);\\n\\n    // Block: registry id = mymod:example_block\\n    public static final DeferredBlock<Block> EXAMPLE_BLOCK =\\n        BLOCKS.registerSimpleBlock(\\\"example_block\\\", props -> props.mapColor(MapColor.STONE));\\n\\n    // BlockItem: registry id = mymod:example_block (same path as block)\\n    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM =\\n        ITEMS.registerSimpleBlockItem(EXAMPLE_BLOCK);\\n\\n    // Constructor: register both DeferredRegisters on the mod event bus\\n    public Mymod(IEventBus modEventBus) {\\n        BLOCKS.register(modEventBus);\\n        ITEMS.register(modEventBus);\\n        modEventBus.addListener(this::addCreative);\\n    }\\n\\n    private void addCreative(BuildCreativeModeTabContentsEvent event) {\\n        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {\\n            event.accept(event.getContext(), EXAMPLE_BLOCK_ITEM.get());\\n        }\\n    }\\n}\\n\\n/*\\n * If the block is a custom subclass (e.g. SlabBlock), use registerBlock:\\n *\\n * public static final DeferredBlock<SlabBlock> MY_SLAB =\\n *     BLOCKS.registerBlock(\\\"my_slab\\\", SlabBlock::new, () -> BlockBehaviour.Properties.ofFullCopy(Blocks.STONE));\\n *\\n * public static final DeferredItem<BlockItem> MY_SLAB_ITEM =\\n *     ITEMS.registerSimpleBlockItem(MY_SLAB);\\n *\\n * If you need an explicit item path different from the block path:\\n *\\n * public static final DeferredItem<BlockItem> ALT_ITEM =\\n *     ITEMS.registerSimpleBlockItem(\\\"alt_item_path\\\", EXAMPLE_BLOCK);\\n */\",\n  \"validation\": {\n    \"compile\": [\n      \"Run `./gradlew build` (or `./gradlew compileJava`) against the NeoForge 26.x MDK. Confirm zero errors referencing `net.minecraftforge.registries` or `RegisterEvent`.\",\n      \"Verify that `DeferredRegister.Blocks` and `DeferredRegister.Items` resolve from `net.neoforged.neoforge.registries.DeferredRegister` (inner classes), not from a top-level `DeferredRegister` generic.\",\n      \"Confirm `registerSimpleBlock` and `registerSimpleBlockItem` are resolved as methods on the specialized register types, not on a generic `DeferredRegister<T>`.\"\n    ],\n    \"registry\": [\n      \"Launch a dev client (`./gradlew runClient`). In the creative inventory (or via `/give @s mymod:example_block`), confirm the block and its BlockItem appear with the exact registry id `mymod:example_block`.\",\n      \"In the debug F3 screen or via `/data get blockstate`, verify the block state resolves correctly.\",\n      \"Check the log for `Registering block` / `Registering item` lines from NeoForge's registry system to confirm both entries are present.\",\n      \"If a creative tab was added, open the corresponding tab and confirm the item is listed.\"\n    ]\n  },\n  \"citations\": [\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/client/model/MultiLayerModelTest.java\",\n    \"Neoforge26.2generatortemplate/src/main/java/com/example/examplemod/Neoforge262modgenerator.java\",\n    \"_upstream/neoforge_docs/docs/blocks/index.md\",\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/HideNeighborFaceTest.java\",\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/FlowerPotTest.java\",\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/client/AmbientOcclusionElementsTest.java\"\n  ],\n  \"uncertainties\": [\n"
+    },
+    {
+      "test": "registry_port",
+      "mode": "oracle",
+      "weight": 18,
+      "ok": true,
+      "quality_score": 38.25,
+      "repair_score": 50.0,
+      "format_score": 0.0,
+      "retrieval_recall": 66.67,
+      "retrieval_hits": [
+        true,
+        true,
+        false
+      ],
+      "citation_score": 0.0,
+      "valid_citations": [],
+      "passages": [
+        {
+          "chunk_id": 14827,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/client/model/MultiLayerModelTest.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 30220,
+          "path": "Neoforge26.2generatortemplate/src/main/java/com/example/examplemod/Neoforge262modgenerator.java",
+          "family": "generator_template",
+          "versions": "26.2"
+        },
+        {
+          "chunk_id": 82231,
+          "path": "_upstream/neoforge_docs/docs/blocks/index.md",
+          "family": "upstream_neoforge",
+          "versions": "1.5"
+        },
+        {
+          "chunk_id": 14614,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/HideNeighborFaceTest.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 14603,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/FlowerPotTest.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 85659,
+          "path": "_upstream/neoforge_docs/versioned_docs/version-1.21.3/blocks/index.md",
+          "family": "upstream_neoforge",
+          "versions": "1.21.3,1.5"
+        }
+      ],
+      "seconds": 43.92,
+      "usage": {
+        "completion_tokens": 2200,
+        "prompt_tokens": 2827,
+        "total_tokens": 5027,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "length",
+      "truncated": true,
+      "response": "```json\n{\n  \"diagnosis\": \"A Forge 1.20.1 block/block-item registration ported to NeoForge (26.x) will fail to compile or register incorrectly if it still uses: (1) the old `DeferredRegister<Block>` / `DeferredRegister<Item>` generic form instead of the specialized `DeferredRegister.Blocks` / `DeferredRegister.Items`; (2) `DeferredRegister.create(Registries.BLOCK, MODID)` instead of `DeferredRegister.createBlocks(MODID)`; (3) manual `new BlockItem(block, itemProps)` inside a `DeferredItem` supplier instead of `ITEMS.registerSimpleBlockItem(block)`; (4) `RegisterEvent` / `@SubscribeEvent` on the mod bus instead of calling `BLOCKS.register(modEventBus)` / `ITEMS.register(modEventBus)` in the constructor; (5) `net.minecraftforge.*` imports instead of `net.neoforged.*`. The registry IDs (namespace:path) must be preserved exactly.\",\n  \"repair_plan\": [\n    \"Replace `DeferredRegister.create(Registries.BLOCK, MODID)` with `DeferredRegister.createBlocks(MODID)` and assign to `DeferredRegister.Blocks`.\",\n    \"Replace `DeferredRegister.create(Registries.ITEM, MODID)` with `DeferredRegister.createItems(MODID)` and assign to `DeferredRegister.Items`.\",\n    \"For a plain `Block` subclass use `BLOCKS.registerSimpleBlock(\\\"path\\\", props -> props.mapColor(...))`. For a custom subclass use `BLOCKS.registerBlock(\\\"path\\\", MyBlock::new, () -> BlockBehaviour.Properties.of()...)`.\",\n    \"For the block item use `ITEMS.registerSimpleBlockItem(BLOCK_DEF)` (single-arg, infers the item name from the block) or `ITEMS.registerSimpleBlockItem(\\\"path\\\", BLOCK_DEF)` (explicit name). Do NOT hand-construct `new BlockItem(...)`. The resulting type is `DeferredItem<BlockItem>`.\",\n    \"In the `@Mod` constructor accept `IEventBus modEventBus` (from `net.neoforged.bus.api`) and call `BLOCKS.register(modEventBus); ITEMS.register(modEventBus);`. Remove any `@SubscribeEvent` / `RegisterEvent` handlers for registration.\",\n    \"Update all imports from `net.minecraftforge.*` to `net.neoforged.*` (e.g. `net.neoforged.fml.common.Mod`, `net.neoforged.bus.api.IEventBus`, `net.neoforged.neoforge.registries.*`).\",\n    \"Preserve the exact registry path strings so that `modid:block_name` and `modid:block_name` (item) remain unchanged.\",\n    \"If a creative tab entry is needed, subscribe to `BuildCreativeModeTabContentsEvent` on the mod bus (not the game bus) and add the `DeferredItem`.\"\n  ],\n  \"code_or_pseudocode\": \"package com.example.mymod;\\n\\nimport net.minecraft.world.item.BlockItem;\\nimport net.minecraft.world.item.CreativeModeTabs;\\nimport net.minecraft.world.level.block.Block;\\nimport net.minecraft.world.level.block.state.BlockBehaviour;\\nimport net.minecraft.world.level.material.MapColor;\\nimport net.neoforged.bus.api.IEventBus;\\nimport net.neoforged.fml.common.Mod;\\nimport net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;\\nimport net.neoforged.neoforge.registries.DeferredBlock;\\nimport net.neoforged.neoforge.registries.DeferredItem;\\nimport net.neoforged.neoforge.registries.DeferredRegister;\\n\\n@Mod(Mymod.MODID)\\npublic class Mymod {\\n    public static final String MODID = \\\"mymod\\\";\\n\\n    // --- Specialized DeferredRegisters (NeoForge 26.x) ---\\n    private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);\\n    private static final DeferredRegister.Items ITEMS  = DeferredRegister.createItems(MODID);\\n\\n    // --- Block: registry id = mymod:example_block ---\\n    // Plain Block \u2192 registerSimpleBlock\\n    public static final DeferredBlock<Block> EXAMPLE_BLOCK =\\n        BLOCKS.registerSimpleBlock(\\\"example_block\\\",\\n            props -> props.mapColor(MapColor.STONE).noOcclusion());\\n\\n    // Custom subclass \u2192 registerBlock with explicit factory\\n    // public static final DeferredBlock<MyBlock> MY_BLOCK =\\n    //     BLOCKS.registerBlock(\\\"my_block\\\", MyBlock::new,\\n    //         () -> BlockBehaviour.Properties.of().mapColor(MapColor.WOOD));\\n\\n    // --- Block Item: registry id = mymod:example_block (same path as block) ---\\n    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM =\\n        ITEMS.registerSimpleBlockItem(EXAMPLE_BLOCK);\\n\\n    // --- Constructor: register on the MOD event bus ---\\n    public Mymod(IEventBus modEventBus) {\\n        BLOCKS.register(modEventBus);\\n        ITEMS.register(modEventBus);\\n        modEventBus.addListener(this::addCreative);\\n    }\\n\\n    private void addCreative(BuildCreativeModeTabContentsEvent event) {\\n        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {\\n            event.accept(event.getContext(), EXAMPLE_BLOCK_ITEM);\\n        }\\n    }\\n}\\n\",\n  \"validation\": {\n    \"compile\": [\n      \"Run `./gradlew compileJava` (or `./gradlew build`) against the NeoForge 26.x MDK. Confirm zero errors referencing `net.minecraftforge` or `DeferredRegister.create(Registries.BLOCK, ...)`. The specialized `DeferredRegister.Blocks` / `DeferredRegister.Items` types must resolve from `net.neoforged.neoforge.registries`.\",\n      \"Verify that `registerSimpleBlockItem` accepts a single `DeferredBlock<Block>` argument (as shown in MultiLayerModelTest and HideNeighborFaceTest) and returns `DeferredItem<BlockItem>`.\"\n    ],\n    \"registry_runtime\": [\n      \"Launch a dev client (`./gradlew runClient`). In the creative inventory search for `mymod:example_block`. Confirm the block and its item share the same registry path.\",\n      \"Open the F3 debug screen and check that the block's registry name reads `mymod:example_block` (not `mymod:example_block_block` or a duplicated suffix).\",\n      \"Place the block in the world and confirm it renders with the expected map colour and does not occlude (if `noOcclusion()` was set).\",\n      \"Run `./gradlew runServer` and execute `/data get blockstate mymod:example_block` to confirm the blockstate is registered.\"\n    ],\n    \"id_preservation\": [\n      \"Diff the old Forge 1.20.1 registry paths against the new NeoForge paths. Every `modid:path` string must be identical. The `registerSimpleBlock` / `registerSimpleBlockItem` calls use the same string literal as the original `DeferredRegister` key.\"\n    ]\n  },\n  \"citations\": [\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/client/model/MultiLayerModelTest.java\",\n    \"Neoforge26.2generatortemplate/src/main/java/com/example/examplemod/Neoforge262modgenerator.java\",\n    \"_upstream/neoforge_docs/docs/blocks/index.md\",\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/HideNeighborFaceTest.java\",\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/oldtest/block/FlowerPotTest.java\",\n    \"_upstream/neoforge_docs/versioned_docs/version-1.21.3/blocks/index.md\"\n  ],\n  \"uncertainties\": [\n    \"The exact NeoForge version target (26.1 vs 26.2) may introduce minor signature differences in `registerSimpleBlockItem` (single-arg vs two-arg). The 26.1 test sources show single-arg `registerSimpleBlockItem(DeferredBlock)`; the 26"
+    },
+    {
+      "test": "gradle_moddev",
+      "mode": "production",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 100.0,
+      "repair_score": 100.0,
+      "format_score": 100.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 100.0,
+      "valid_citations": [
+        "Exact_Version_Sources/NeoForge/26.1/settings.gradle",
+        "Exact_Version_Sources/NeoForge/26.2/settings.gradle",
+        "_upstream/moddevgradle/build.gradle",
+        "Gradle Migration Primer Changes/minecraft-build-requirements.md",
+        "Gradle Migration Primer Changes/moddevgradle/configuration-reference.md"
+      ],
+      "passages": [
+        {
+          "chunk_id": 6772,
+          "path": "Exact_Version_Sources/NeoForge/26.1/settings.gradle",
+          "family": "exact_neoforge",
+          "versions": "1.0.0,26.1"
+        },
+        {
+          "chunk_id": 6789,
+          "path": "Exact_Version_Sources/NeoForge/26.2/settings.gradle",
+          "family": "exact_neoforge",
+          "versions": "1.0.0,26.2"
+        },
+        {
+          "chunk_id": 34213,
+          "path": "_upstream/moddevgradle/build.gradle",
+          "family": "other",
+          "versions": "1.0.8,1.11,1.2,1.2.1"
+        },
+        {
+          "chunk_id": 84,
+          "path": "Gradle Migration Primer Changes/minecraft-build-requirements.md",
+          "family": "gradle",
+          "versions": "1.20.1,1.20.2,1.21,26.1"
+        },
+        {
+          "chunk_id": 34212,
+          "path": "_upstream/moddevgradle/build.gradle",
+          "family": "other",
+          "versions": "1.0.8,1.11,1.2,1.2.1"
+        },
+        {
+          "chunk_id": 25993,
+          "path": "Gradle Migration Primer Changes/moddevgradle/configuration-reference.md",
+          "family": "gradle",
+          "versions": "1.0.11,1.21"
+        }
+      ],
+      "seconds": 47.892,
+      "usage": {
+        "completion_tokens": 1971,
+        "prompt_tokens": 2714,
+        "total_tokens": 4685,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "truncated": false,
+      "response": "```json\n{\n  \"diagnosis\": \"The NeoForge settings.gradle (both 26.1 and 26.2) declares the plugin `net.neoforged.moddev.repositories` with version `${moddevgradle_plugin_version}` inside the `plugins {}` block. The variable `moddevgradle_plugin_version` is not defined within the shown settings.gradle source. In Gradle, the `plugins {}` block in settings.gradle is evaluated before the body of settings.gradle, so the variable must be resolvable at that point \u2014 typically via a `gradle.properties` file, a `settings.gradle` preamble (e.g., a `buildscript` block or `ext` assignment before `plugins {}`), or a convention plugin. If the variable is undefined or empty, Gradle attempts to resolve the plugin with a literal or blank version string, producing a 'Plugin [id: net.neoforged.moddev.repositories, version: ] could not be found' or 'Could not find net.neoforged.moddev.repositories:<empty>' error. The repository configuration itself (gradlePluginPortal, maven.neoforged.net/releases, mavenLocal) is correct and matches the plugin IDs registered in the upstream moddevgradle build.gradle. A secondary concern for NeoForge 26.1+ is the Java 25 / Gradle 9.1+ requirement stated in the migration primer; an older Gradle wrapper would fail before plugin resolution completes.\",\n  \"repair_plan\": [\n    \"1. Verify the Gradle wrapper version: run `gradle --version` or inspect `gradle/wrapper/gradle-wrapper.properties`. For NeoForge 26.1+ the wrapper must be 9.1 or newer (per minecraft-build-requirements.md). If older, update the wrapper.\",\n    \"2. Verify the JDK: run `java -version`. NeoForge 26.1+ requires Java 25. If the toolchain is not set, add `org.gradle.java.home` or a toolchain block.\",\n    \"3. Locate where `moddevgradle_plugin_version` is defined. Check (a) `gradle.properties` at the project root, (b) a `settings.gradle` line before the `plugins {}` block (e.g., `ext.moddevgradle_plugin_version = '...'`), or (c) a `buildSrc` / convention plugin. If it is missing, add it to `gradle.properties`: `moddevgradle_plugin_version=2.0.x` (use the actual published version).\",\n    \"4. Confirm the plugin artifact is reachable: run `./gradlew help --refresh-dependencies --info` and watch for the resolution of `net.neoforged.moddev.repositories` from `https://maven.neoforged.net/releases`. If it falls back to `mavenLocal()`, verify `~/.m2/repository/net/neoforged/moddevgradle/` contains the expected version.\",\n    \"5. If the variable is defined but the version string is wrong (typo, trailing space, wrong major), correct it in `gradle.properties` and re-run.\",\n    \"6. As a last resort, pin the version literally in the `plugins {}` block to isolate the variable issue: `id 'net.neoforged.moddev.repositories' version '2.0.47'` (replace with the actual version).\"\n  ],\n  \"code_or_pseudocode\": \"// gradle.properties (project root) \u2014 add or verify this line:\\nmoddevgradle_plugin_version=2.0.47   // replace with the actual published MDG version\\n\\n// settings.gradle \u2014 the plugins block (unchanged, but the variable must resolve):\\npluginManagement {\\n    repositories {\\n        gradlePluginPortal()\\n        maven { url = 'https://maven.neoforged.net/releases' }\\n        mavenLocal()\\n    }\\n}\\n\\nplugins {\\n    id 'net.neoforged.moddev.repositories' version \\\"${moddevgradle_plugin_version}\\\"\\n    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'\\n}\\n\\n// Minimal diagnostic commands:\\n// 1) Check wrapper version\\n//    cat gradle/wrapper/gradle-wrapper.properties   # look for distributionUrl\\n// 2) Check JDK\\n//    java -version\\n// 3) Force re-resolution with verbose output\\n//    ./gradlew help --refresh-dependencies --info 2>&1 | grep -i 'moddev\\\\|plugin\\\\|resolv'\\n// 4) If the variable is the issue, temporarily hard-code:\\n//    id 'net.neoforged.moddev.repositories' version '2.0.47'\",\n  \"validation\": [\n    \"After adding/correcting `moddevgradle_plugin_version` in `gradle.properties`, run `./gradlew help` and confirm no 'Plugin [id: net.neoforged.moddev.repositories, version: ...] could not be found' error.\",\n    \"Run `./gradlew dependencies --configuration classpath` (or `./gradlew help --info`) and verify the plugin jar is resolved from `https://maven.neoforged.net/releases` (not mavenLocal fallback).\",\n    \"Confirm `gradle --version` reports 9.1+ and `java -version` reports 25 for NeoForge 26.1+ targets.\",\n    \"If using `mavenLocal()`, verify the artifact exists: `ls ~/.m2/repository/net/neoforged/moddevgradle/<version>/`.\"\n  ],\n  \"citations\": [\n    \"Exact_Version_Sources/NeoForge/26.1/settings.gradle\",\n    \"Exact_Version_Sources/NeoForge/26.2/settings.gradle\",\n    \"_upstream/moddevgradle/build.gradle\",\n    \"Gradle Migration Primer Changes/minecraft-build-requirements.md\",\n    \"Gradle Migration Primer Changes/moddevgradle/configuration-reference.md\"\n  ],\n  \"uncertainties\": [\n    \"The exact value of `moddevgradle_plugin_version` is not present in the provided evidence; the settings.gradle references it as a variable but the defining file (gradle.properties, a preamble, or a convention plugin) is not shown. The diagnosis that the variable is the root cause is the most likely explanation but is not 100% confirmed without seeing the full project tree.\",\n    \"The actual published version of ModDevGradle compatible with NeoForge 26.1/26.2 is not stated in the evidence; the version number used in the repair plan is a placeholder.\",\n    \"The evidence does not include the actual Gradle error message the user encountered. The diagnosis is inferred from the structural pattern (variable referenced in plugins block without a visible definition in the shown source). If the error is instead a network/repository issue (e.g., maven.neoforged.net unreachable), the repository configuration in settings.gradle is correct per the evidence, so the failure would be environmental rather than a configuration bug.\",\n    \"The `dependencyResolutionManagement` block sets `repositoriesMode = FAIL_ON_PROJECT_REPOS`, which is a separate concern from plugin resolution (plugins use `pluginManagement.repositories`). This is noted but is unlikely to be the cause of a plugin-resolution failure.\"\n  ]\n}\n```"
+    },
+    {
+      "test": "gradle_moddev",
+      "mode": "oracle",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 100.0,
+      "repair_score": 100.0,
+      "format_score": 100.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 100.0,
+      "valid_citations": [
+        "Exact_Version_Sources/NeoForge/26.1/settings.gradle",
+        "Exact_Version_Sources/NeoForge/26.2/settings.gradle",
+        "_upstream/moddevgradle/build.gradle",
+        "Gradle Migration Primer Changes/minecraft-build-requirements.md",
+        "Gradle Migration Primer Changes/moddevgradle/configuration-reference.md"
+      ],
+      "passages": [
+        {
+          "chunk_id": 6772,
+          "path": "Exact_Version_Sources/NeoForge/26.1/settings.gradle",
+          "family": "exact_neoforge",
+          "versions": "1.0.0,26.1"
+        },
+        {
+          "chunk_id": 6789,
+          "path": "Exact_Version_Sources/NeoForge/26.2/settings.gradle",
+          "family": "exact_neoforge",
+          "versions": "1.0.0,26.2"
+        },
+        {
+          "chunk_id": 34213,
+          "path": "_upstream/moddevgradle/build.gradle",
+          "family": "other",
+          "versions": "1.0.8,1.11,1.2,1.2.1"
+        },
+        {
+          "chunk_id": 84,
+          "path": "Gradle Migration Primer Changes/minecraft-build-requirements.md",
+          "family": "gradle",
+          "versions": "1.20.1,1.20.2,1.21,26.1"
+        },
+        {
+          "chunk_id": 34212,
+          "path": "_upstream/moddevgradle/build.gradle",
+          "family": "other",
+          "versions": "1.0.8,1.11,1.2,1.2.1"
+        },
+        {
+          "chunk_id": 25983,
+          "path": "Gradle Migration Primer Changes/moddevgradle/configuration-reference.md",
+          "family": "gradle",
+          "versions": "1.0.11,1.21"
+        }
+      ],
+      "seconds": 44.324,
+      "usage": {
+        "completion_tokens": 2007,
+        "prompt_tokens": 2762,
+        "total_tokens": 4769,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "truncated": false,
+      "response": "```json\n{\n  \"diagnosis\": \"The NeoForge 26.1/26.2 settings.gradle resolves the ModDevGradle repositories plugin (net.neoforged.moddev.repositories) via a version variable ${moddevgradle_plugin_version} that is NOT defined in settings.gradle itself. It must be supplied from gradle.properties. A plugin-resolution failure occurs when: (1) the property is missing or misspelled in gradle.properties, (2) the declared version does not exist in any of the three pluginManagement repositories (gradlePluginPortal, maven.neoforged.net/releases, mavenLocal), or (3) the Gradle distribution is older than 9.1 (required by NeoForge 26.1+ per migration guidance) causing the plugin's metadata to be unreadable. The foojay-resolver-convention plugin is pinned to 1.0.0 in the NeoForge settings.gradle, which differs from the 0.8.0 shown in the ModDevGradle configuration reference \u2014 this is not an error but a version choice that must be resolvable from gradlePluginPortal.\",\n  \"repair_plan\": [\n    \"Step 1 \u2014 Verify the version property exists: open gradle.properties at the project root and confirm a line `moddevgradle_plugin_version=<x.y.z>` is present. If absent, add it with a version known to be published on maven.neoforged.net/releases.\",\n    \"Step 2 \u2014 Confirm Gradle wrapper version: run `gradle --version` or inspect gradle/wrapper/gradle-wrapper.properties. NeoForge 26.1+ requires Gradle 9.1+. If the wrapper is older, upgrade it.\",\n    \"Step 3 \u2014 Confirm Java toolchain: NeoForge 26.1+ requires Java 25. Run `java -version` or check the toolchain block. The foojay-resolver-convention plugin (1.0.0) should auto-provision Java 25 if not installed locally.\",\n    \"Step 4 \u2014 Verify repository reachability: run `curl -sI https://maven.neoforged.net/releases/net/neoforged/moddevgradle/net.neoforged.moddev.repositories/<version>/` to confirm the artifact exists. Also confirm `https://plugins.gradle.org/m2/` is reachable for the foojay plugin.\",\n    \"Step 5 \u2014 Clear Gradle caches and retry: `./gradlew --refresh-dependencies clean` (or `gradle --refresh-dependencies clean`). This forces re-resolution of plugin markers.\",\n    \"Step 6 \u2014 If the failure is a 'plugin not found' for net.neoforged.moddev.repositories, verify the exact plugin ID matches what is published (confirmed in moddevgradle/build.gradle: id = 'net.neoforged.moddev.repositories'). A common typo is omitting '.repositories' or using 'net.neoforged.moddev' in settings.gradle where only the repositories variant is intended.\",\n    \"Step 7 \u2014 If mavenLocal is intended as a fallback, ensure the plugin jar is installed locally: `~/.m2/repository/net/neoforged/moddevgradle/...`. Otherwise remove mavenLocal() to avoid masking a missing remote artifact.\"\n  ],\n  \"code_or_pseudocode\": \"// gradle.properties (project root) \u2014 REQUIRED\\nmoddevgradle_plugin_version=2.0.78   // replace with actual published version\\nminecraft_version=26.1\\n\\n// settings.gradle \u2014 already correct per evidence; no structural change needed\\npluginManagement {\\n    repositories {\\n        gradlePluginPortal()\\n        maven { url = 'https://maven.neoforged.net/releases' }\\n        mavenLocal()  // optional; remove if not using local builds\\n    }\\n}\\n\\nplugins {\\n    id 'net.neoforged.moddev.repositories' version \\\"${moddevgradle_plugin_version}\\\"\\n    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'\\n}\\n\\n// gradle/wrapper/gradle-wrapper.properties \u2014 verify distributionUrl\\ndistributionUrl=https\\\\://services.gradle.org/distributions/gradle-9.1-bin.zip\\n\\n// Minimal diagnostic command sequence:\\n// 1) Check property resolution:\\n//    ./gradlew properties | grep moddevgradle\\n// 2) Check plugin resolution with stack trace:\\n//    ./gradlew help --stacktrace --info 2>&1 | grep -A5 \\\"net.neoforged.moddev\\\"\\n// 3) Verify remote artifact exists:\\n//    curl -sfI \\\"https://maven.neoforged.net/releases/net/neoforged/moddevgradle/net.neoforged.moddev.repositories/${moddevgradle_plugin_version}/net.neoforged.moddev.repositories-${moddevgradle_plugin_version}.pom\\\"\\n// 4) Force re-resolution:\\n//    ./gradlew --refresh-dependencies help\",\n  \"validation\": [\n    \"After adding/correcting moddevgradle_plugin_version in gradle.properties, run `./gradlew help --stacktrace`. Expect: BUILD SUCCESSFUL with no 'Plugin [id: 'net.neoforged.moddev.repositories', version: ...] was not found' error.\",\n    \"Run `./gradlew properties | grep moddevgradle_plugin_version` and confirm the value is non-empty and matches a published version.\",\n    \"Run `./gradlew --version` and confirm Gradle >= 9.1 and Java >= 25 (or that foojay auto-provisions it).\",\n    \"If using mavenLocal, verify the jar exists: `ls ~/.m2/repository/net/neoforged/moddevgradle/net.neoforged.moddev.repositories/<version>/*.jar`.\",\n    \"Run `./gradlew --refresh-dependencies clean` to confirm no stale cached 'not found' markers persist.\"\n  ],\n  \"citations\": [\n    \"Exact_Version_Sources/NeoForge/26.1/settings.gradle\",\n    \"Exact_Version_Sources/NeoForge/26.2/settings.gradle\",\n    \"_upstream/moddevgradle/build.gradle\",\n    \"Gradle Migration Primer Changes/minecraft-build-requirements.md\",\n    \"Gradle Migration Primer Changes/moddevgradle/configuration-reference.md\"\n  ],\n  \"uncertainties\": [\n    \"The exact value of moddevgradle_plugin_version is not present in any provided source file; it is expected to come from gradle.properties which was not included in the evidence. The correct version number must be confirmed against the NeoForged project listing.\",\n    \"The configuration-reference.md shows foojay-resolver-convention at 0.8.0 while the NeoForge 26.1/26.2 settings.gradle uses 1.0.0. Both may be valid; the evidence does not confirm whether 1.0.0 is published on the Gradle Plugin Portal.\",\n    \"The evidence does not include the actual error message from the failing build, so the specific failure mode (missing property vs. wrong version vs. unreachable repository vs. Gradle/Java version mismatch) cannot be definitively isolated without the stack trace.\",\n    \"The moddevgradle/build.gradle evidence is truncated; the full list of published plugin versions and their Gradle compatibility ranges is not visible.\",\n    \"Whether mavenLocal() is intentionally included for a local ModDevGradle development build or is a leftover is unclear from the evidence.\"\n  ]\n}\n```"
+    },
+    {
+      "test": "data_components",
+      "mode": "production",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 100.0,
+      "repair_score": 100.0,
+      "format_score": 100.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 100.0,
+      "valid_citations": [
+        "NeoForge-Migration-Primers/content/1.20.5/index.md",
+        "NeoForge-Migration-Primers/content/primer_changes_1.20.1-to-26.2/1.20.5.md",
+        "Exact_Version_Sources/NeoForge/26.2/patches/net/minecraft/world/level/block/entity/BlockEntity.java.patch",
+        "Exact_Version_Sources/NeoForge/26.1/patches/net/minecraft/world/level/block/entity/BlockEntity.java.patch",
+        "Exact_Version_Sources/NeoForge/26.1/patches/net/minecraft/world/entity/Entity.java.patch",
+        "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/debug/capabilities/ItemEnergyTests.java"
+      ],
+      "passages": [
+        {
+          "chunk_id": 28702,
+          "path": "NeoForge-Migration-Primers/content/1.20.5/index.md",
+          "family": "neoforge_primers",
+          "versions": "1.20.4,1.20.5"
+        },
+        {
+          "chunk_id": 29777,
+          "path": "NeoForge-Migration-Primers/content/primer_changes_1.20.1-to-26.2/1.20.5.md",
+          "family": "neoforge_primers",
+          "versions": "1.20.1,1.20.4,1.20.5,26.2"
+        },
+        {
+          "chunk_id": 16301,
+          "path": "Exact_Version_Sources/NeoForge/26.2/patches/net/minecraft/world/level/block/entity/BlockEntity.java.patch",
+          "family": "exact_neoforge",
+          "versions": "26.2"
+        },
+        {
+          "chunk_id": 8424,
+          "path": "Exact_Version_Sources/NeoForge/26.1/patches/net/minecraft/world/level/block/entity/BlockEntity.java.patch",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 7879,
+          "path": "Exact_Version_Sources/NeoForge/26.1/patches/net/minecraft/world/entity/Entity.java.patch",
+          "family": "exact_neoforge",
+          "versions": "1.0,26.1"
+        },
+        {
+          "chunk_id": 14191,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/debug/capabilities/ItemEnergyTests.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        }
+      ],
+      "seconds": 49.551,
+      "usage": {
+        "completion_tokens": 2112,
+        "prompt_tokens": 3005,
+        "total_tokens": 5117,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "truncated": false,
+      "response": "```json\n{\n  \"diagnosis\": \"In 1.20.5+, the CompoundTag previously embedded directly in an ItemStack has been replaced by a DataComponentMap. Each data component is a typed key-value pair (key = string, value = object) serialized via codecs. Arbitrary unconverted data is retained under the minecraft:custom_data key. NeoForge additionally persists a NeoForgeData CompoundTag on BlockEntities and Entities for modded state, but for ItemStacks the canonical target is a registered DataComponentType. Old saves that stored custom NBT as a raw CompoundTag inside the ItemStack will not automatically map to a new DataComponentType unless a migration path is provided.\",\n  \"repair_plan\": [\n    \"1. Define a custom DataComponentType<T> for the durable state (e.g., a record or class holding the fields previously in the CompoundTag). Register it via DeferredRegister<DataComponentType<?>> into Registries.DATA_COMPONENT_TYPE, following the pattern shown in ItemEnergyTests.java.\",\n    \"2. Provide a Codec<T> for the component value so it can be written to disk and synchronized over the network. The codec must be able to decode the legacy CompoundTag shape during migration.\",\n    \"3. On ItemStack load (e.g., in a DataFixerUpper fixer or a one-time migration hook), detect old saves where the custom data still lives in the minecraft:custom_data CompoundTag (or in the legacy CompoundTag slot). Parse the legacy keys and write them into the new DataComponentType slot.\",\n    \"4. After migration, remove the legacy keys from minecraft:custom_data to avoid double-storage. Guard with a version flag or a 'migrated' boolean so the migration runs exactly once per item.\",\n    \"5. For BlockEntity and Entity holders of the ItemStack, ensure NeoForgeData (CompoundTag) is still read/written as shown in the NeoForge patches, but the ItemStack's own durable state now lives in its DataComponentMap. Do not duplicate the same field in both NeoForgeData and the DataComponentType.\",\n    \"6. Update all read/write call-sites: replace itemStack.getTag().getCompoundTag(\\\"myMod:state\\\") with itemStack.getOrDefault(MY_COMPONENT, defaultValue) and itemStack.set(MY_COMPONENT, value).\",\n    \"7. Keep the minecraft:custom_data fallback for any fields that have not yet been promoted to a dedicated DataComponentType, per the primer's statement that 'arbitrary data that hasn't been converted to a data component is held within the minecraft:custom_data key.'\"\n  ],\n  \"code_or_pseudocode\": \"// 1. Define the component value type\\npublic record DurableState(int durability, String owner, int charge) {\\n    public static final Codec<DurableState> CODEC = RecordCodecBuilder.create(inst ->\\n        inst.group(\\n            Codec.INT.fieldOf(\\\"durability\\\").forGetter(DurableState::durability),\\n            Codec.STRING.fieldOf(\\\"owner\\\").forGetter(DurableState::owner),\\n            Codec.INT.fieldOf(\\\"charge\\\").forGetter(DurableState::charge)\\n        ).apply(inst, DurableState::new));\\n}\\n\\n// 2. Register the DataComponentType (pattern from ItemEnergyTests.java)\\nprivate static final DeferredRegister<DataComponentType<?>> COMPONENTS =\\n    HELPER.registrar(Registries.DATA_COMPONENT_TYPE);\\n\\npublic static final DeferredHolder<DataComponentType<?>, DataComponentType<DurableState>> DURABLE_STATE =\\n    COMPONENTS.register(\\\"durable_state\\\",\\n        () -> DataComponentType.<DurableState>builder()\\n            .codec(DurableState.CODEC)\\n            .networkSynchronized(ByteBufCodecs.of(DurableState.CODEC))\\n            .build());\\n\\n// 3. One-time migration: old CompoundTag -> new DataComponentType\\n//    Called during world/item load when a legacy tag is detected.\\npublic static void migrateLegacy(ItemStack stack) {\\n    // Legacy path: data was in minecraft:custom_data or a raw CompoundTag\\n    CompoundTag legacy = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY)\\n        .getCompoundTag(\\\"myMod:durable\\\");\\n    if (legacy == null || legacy.isEmpty()) return;\\n\\n    DurableState state = new DurableState(\\n        legacy.getInt(\\\"durability\\\"),\\n        legacy.getString(\\\"owner\\\"),\\n        legacy.getInt(\\\"charge\\\")\\n    );\\n    stack.set(DURABLE_STATE.get(), state);\\n\\n    // Remove legacy key to prevent double-storage\\n    CustomData cd = stack.get(DataComponents.CUSTOM_DATA);\\n    if (cd != null) {\\n        cd.remove(\\\"myMod:durable\\\");\\n    }\\n}\\n\\n// 4. Normal read/write after migration\\nDurableState state = stack.getOrDefault(DURABLE_STATE.get(), new DurableState(0, \\\"\\\", 0));\\nstack.set(DURABLE_STATE.get(), new DurableState(state.durability() - 1, state.owner(), state.charge()));\",\n  \"validation\": [\n    \"Confirm the DataComponentType is registered before any ItemStack is loaded (registration phase, not runtime).\",\n    \"Load a 1.20.4 save containing the legacy CompoundTag and verify migrateLegacy populates the DataComponentType and clears the legacy key.\",\n    \"Save and reload the migrated world; confirm the DataComponentType round-trips through its Codec without data loss.\",\n    \"Verify network synchronization: the component appears on the client after a server-to-client sync (networkSynchronized codec).\",\n    \"Confirm BlockEntity NeoForgeData (CompoundTag) is still read/written independently and does not conflict with the ItemStack DataComponentMap.\",\n    \"Run the existing NeoForge test framework patterns (DynamicTest / GameTest) to assert component values after migration.\"\n  ],\n  \"citations\": [\n    \"NeoForge-Migration-Primers/content/1.20.5/index.md\",\n    \"NeoForge-Migration-Primers/content/primer_changes_1.20.1-to-26.2/1.20.5.md\",\n    \"Exact_Version_Sources/NeoForge/26.2/patches/net/minecraft/world/level/block/entity/BlockEntity.java.patch\",\n    \"Exact_Version_Sources/NeoForge/26.1/patches/net/minecraft/world/level/block/entity/BlockEntity.java.patch\",\n    \"Exact_Version_Sources/NeoForge/26.1/patches/net/minecraft/world/entity/Entity.java.patch\",\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/debug/capabilities/ItemEnergyTests.java\"\n  ],\n  \"uncertainties\": [\n    \"The exact builder API for DataComponentType (e.g., whether .networkSynchronized() takes a StreamCodec or a Codec, and the precise method names) is not fully shown in the provided evidence. ItemEnergyTests.java imports DataComponentType and ByteBufCodecs but the full builder chain is truncated. Verify against the 26.2/26.1 source before finalizing.\",\n    \"The primer states minecraft:custom_data holds unconverted data, but does not specify the exact CustomData API for reading/writing sub-keys (e.g., getCompoundTag, remove). The migration code assumes a CompoundTag-like accessor; confirm the actual CustomData interface in the target version.\",\n    \"Whether a DataFixerUpper fixer is the correct hook for ItemStack migration (vs. a modded load event) is not addressed in the provided evidence. The primer mentions DataFixerUpper in the context of ExtraCodecs but does not detail ItemStack-specific fixers.\",\n    \"The NeoForgeData CompoundTag on BlockEntity/Entity is confirmed in patches, but its interaction with ItemStack DataComponentMap when an ItemStack is stored inside a BlockEntity (e.g., a chest) is not covered in the provided evidence. Ensure no double-persistence occurs in that scenario.\"\n  ]\n}\n```"
+    },
+    {
+      "test": "data_components",
+      "mode": "oracle",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 100.0,
+      "repair_score": 100.0,
+      "format_score": 100.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 100.0,
+      "valid_citations": [
+        "NeoForge-Migration-Primers/content/1.20.5/index.md",
+        "Exact_Version_Sources/NeoForge/26.1/src/main/java/net/neoforged/neoforge/items/ComponentItemHandler.java",
+        "Exact_Version_Sources/NeoForge/26.1/src/main/java/net/neoforged/neoforge/energy/ComponentEnergyStorage.java",
+        "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/debug/capabilities/ItemEnergyTests.java",
+        "_upstream/neoforge_primers/primers/1.20.5/index.md",
+        "_upstream/forge/src/main/java/net/minecraftforge/items/wrapper/ShulkerItemStackInvWrapper.java"
+      ],
+      "passages": [
+        {
+          "chunk_id": 28702,
+          "path": "NeoForge-Migration-Primers/content/1.20.5/index.md",
+          "family": "neoforge_primers",
+          "versions": "1.20.4,1.20.5"
+        },
+        {
+          "chunk_id": 10933,
+          "path": "Exact_Version_Sources/NeoForge/26.1/src/main/java/net/neoforged/neoforge/items/ComponentItemHandler.java",
+          "family": "exact_neoforge",
+          "versions": "1.21.9,26.1"
+        },
+        {
+          "chunk_id": 10671,
+          "path": "Exact_Version_Sources/NeoForge/26.1/src/main/java/net/neoforged/neoforge/energy/ComponentEnergyStorage.java",
+          "family": "exact_neoforge",
+          "versions": "1.21.9,26.1"
+        },
+        {
+          "chunk_id": 14191,
+          "path": "Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/debug/capabilities/ItemEnergyTests.java",
+          "family": "exact_neoforge",
+          "versions": "26.1"
+        },
+        {
+          "chunk_id": 87755,
+          "path": "_upstream/neoforge_primers/primers/1.20.5/index.md",
+          "family": "upstream_neoforge",
+          "versions": "1.20.4,1.20.5"
+        },
+        {
+          "chunk_id": 38267,
+          "path": "_upstream/forge/src/main/java/net/minecraftforge/items/wrapper/ShulkerItemStackInvWrapper.java",
+          "family": "upstream_forge",
+          "versions": ""
+        }
+      ],
+      "seconds": 43.215,
+      "usage": {
+        "completion_tokens": 1887,
+        "prompt_tokens": 2777,
+        "total_tokens": 4664,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "truncated": false,
+      "response": "```json\n{\n  \"diagnosis\": \"The mod stores durable custom state (e.g., durability, charge, progress) in the legacy CompoundTag (NBT) attached to an ItemStack. In 1.20.5+ the vanilla mechanism is DataComponentMap: each key is a registered DataComponentType<T> with a Codec, and arbitrary unconverted data falls back to the minecraft:custom_data key. The old NBT path is no longer the primary storage, so a migration is required to keep state durable across save/load and network sync.\",\n  \"repair_plan\": [\n    \"1. Identify every custom NBT key the mod currently reads/writes on ItemStack (e.g., 'mod:durability', 'mod:charge').\",\n    \"2. For each key, define a typed DataComponentType<T> with an appropriate Codec (e.g., DataComponentType.<Integer>builder().persistent(Codec.INT).build() for an integer durability value).\",\n    \"3. Register all new DataComponentType instances in the mod's registration event using the DATA_COMPONENT_TYPE registry (Registries.DATA_COMPONENT_TYPE), following the pattern shown in ItemEnergyTests.java.\",\n    \"4. Replace all ItemStack.getTag()/setTag() / getTagElement()/setTagElement() calls with ItemStack.getOrDefault(component, default) and ItemStack.set(component, value) (or the MutableDataComponentHolder equivalents for capability-backed storage).\",\n    \"5. For capability-backed storage (energy, item handlers), prefer the non-deprecated ItemAccessEnergyHandler / ItemAccessItemHandler over the deprecated ComponentEnergyStorage / ComponentItemHandler.\",\n    \"6. Implement a one-time save migration: on world/item load, check for the legacy NBT key; if present, read the value, write it into the corresponding DataComponentType, and remove the legacy NBT key. This preserves old saves.\",\n    \"7. For any data that has no dedicated component yet, store it under the minecraft:custom_data key (CustomData component) as a transitional fallback.\",\n    \"8. Ensure network sync uses the component's codec (ByteBufCodecs) rather than raw NBT serialization.\"\n  ],\n  \"code_or_pseudocode\": \"// --- Registration (follows ItemEnergyTests.java pattern) ---\\nprivate static final RegistrationHelper HELPER = RegistrationHelper.create(\\\"my_mod\\\");\\nprivate static final DeferredRegister<DataComponentType<?>> COMPONENTS =\\n    HELPER.registrar(Registries.DATA_COMPONENT_TYPE);\\n\\n// Example: integer durability component\\npublic static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> DURABILITY =\\n    COMPONENTS.register(\\\"durability\\\",\\n        () -> DataComponentType.<Integer>builder()\\n            .persistent(Codec.INT)          // disk + network codec\\n            .build());\\n\\n// --- Reading / Writing (replaces old NBT) ---\\n// Old:  int dur = stack.getTag().getInt(\\\"mod:durability\\\");\\n// New:\\nint dur = stack.getOrDefault(DURABILITY.get(), 100);\\nstack.set(DURABILITY.get(), dur - 1);\\n\\n// --- One-time migration on load (preserves old saves) ---\\npublic static void migrateLegacyNBT(ItemStack stack) {\\n    CompoundTag tag = stack.getTag();\\n    if (tag != null && tag.contains(\\\"mod:durability\\\")) {\\n        int legacyDur = tag.getInt(\\\"mod:durability\\\");\\n        stack.set(DURABILITY.get(), legacyDur);\\n        tag.remove(\\\"mod:durability\\\");   // clean up old key\\n        // If no other legacy keys remain, the tag can be cleared\\n    }\\n}\\n\\n// --- Transitional fallback for unconverted data ---\\n// Store under minecraft:custom_data (CustomData component) until a\\n// dedicated DataComponentType is registered.\\nCustomData custom = stack.getOrDefault(DataComponents.CUSTOM_DATA, new CustomData(new CompoundTag()));\\nCompoundDataContainer cdc = custom.container();\\ncdc.putInt(\\\"mod:progress\\\", 42);\\nstack.set(DataComponents.CUSTOM_DATA, new CustomData(cdc));\",\n  \"validation\": [\n    \"Compile against the NeoForge 26.1 / 1.21.x API; confirm DataComponentType.builder().persistent(Codec).build() resolves.\",\n    \"Unit-test: create an ItemStack, set the component, serialize to NBT, deserialize, and assert the value round-trips.\",\n    \"Migration test: craft a legacy ItemStack with the old NBT key, call migrateLegacyNBT, assert the component is populated and the old key is removed.\",\n    \"Network test: send the ItemStack over the wire and verify the component codec (ByteBufCodecs) deserializes correctly on the other side.\",\n    \"Regression: load a 1.20.4 save in the migrated mod and confirm all durable state is intact.\"\n  ],\n  \"citations\": [\n    \"NeoForge-Migration-Primers/content/1.20.5/index.md\",\n    \"Exact_Version_Sources/NeoForge/26.1/src/main/java/net/neoforged/neoforge/items/ComponentItemHandler.java\",\n    \"Exact_Version_Sources/NeoForge/26.1/src/main/java/net/neoforged/neoforge/energy/ComponentEnergyStorage.java\",\n    \"Exact_Version_Sources/NeoForge/26.1/tests/src/main/java/net/neoforged/neoforge/debug/capabilities/ItemEnergyTests.java\",\n    \"_upstream/neoforge_primers/primers/1.20.5/index.md\",\n    \"_upstream/forge/src/main/java/net/minecraftforge/items/wrapper/ShulkerItemStackInvWrapper.java\"\n  ],\n  \"uncertainties\": [\n    \"The exact builder method names on DataComponentType (e.g., .persistent(Codec), .build()) are inferred from the 1.20.5 primer's description of codecs and the test file's imports; the full builder API is not shown in the provided evidence.\",\n    \"The precise signature of ItemStack.getOrDefault / ItemStack.set for DataComponentType is not explicitly shown in the evidence; it is implied by the MutableDataComponentHolder usage in ComponentItemHandler and ComponentEnergyStorage.\",\n    \"The CustomData / CompoundDataContainer API for the minecraft:custom_data fallback is referenced in the primer and the ShulkerItemStackInvWrapper import, but the exact method names (e.g., container(), putInt) are not fully shown.\",\n    \"Whether the mod targets 1.20.5 specifically or a later 1.21.x version affects which deprecated classes (ComponentEnergyStorage, ComponentItemHandler) are still available; the evidence shows they are deprecated since 1.21.9.\",\n    \"The exact migration hook (e.g., a NeoForge event for item deserialization) is not present in the provided evidence; the plan assumes a generic load-time callback.\"\n  ]\n}\n```"
+    },
+    {
+      "test": "geckolib_migration",
+      "mode": "production",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 85.38,
+      "repair_score": 75.0,
+      "format_score": 100.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 100.0,
+      "valid_citations": [
+        "GeckoLib_References_26.2/docs/current-wiki/docs/miscellaneous/triggerable-animations.mdx",
+        "GeckoLib_References_26.2/source/geckolib/26.1/common/src/main/java/com/geckolib/animatable/manager/AnimatableManager.java",
+        "GeckoLib_References_26.2/source/geckolib/1.21.8/common/src/main/java/software/bernie/geckolib/animatable/processing/AnimationController.java",
+        "GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/AnimatableManager.java",
+        "GeckoLib_References_26.2/source/geckolib/1.21.1/common/src/main/java/software/bernie/geckolib/animation/AnimatableManager.java"
+      ],
+      "passages": [
+        {
+          "chunk_id": 19347,
+          "path": "GeckoLib_References_26.2/docs/current-wiki/docs/miscellaneous/triggerable-animations.mdx",
+          "family": "geckolib",
+          "versions": "26.2"
+        },
+        {
+          "chunk_id": 21755,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/ContextAwareAnimatableManager.java",
+          "family": "geckolib",
+          "versions": "1.20.1,26.2"
+        },
+        {
+          "chunk_id": 21712,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/AnimatableManager.java",
+          "family": "geckolib",
+          "versions": "1.20.1,26.2"
+        },
+        {
+          "chunk_id": 22592,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.21.1/common/src/main/java/software/bernie/geckolib/animation/AnimatableManager.java",
+          "family": "geckolib",
+          "versions": "1.21.1,26.2"
+        },
+        {
+          "chunk_id": 24244,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.21.8/common/src/main/java/software/bernie/geckolib/animatable/processing/AnimationController.java",
+          "family": "geckolib",
+          "versions": "1.21.8,26.2"
+        },
+        {
+          "chunk_id": 24899,
+          "path": "GeckoLib_References_26.2/source/geckolib/26.1/common/src/main/java/com/geckolib/animatable/manager/AnimatableManager.java",
+          "family": "geckolib",
+          "versions": "26.1,26.2"
+        }
+      ],
+      "seconds": 52.119,
+      "usage": {
+        "completion_tokens": 2177,
+        "prompt_tokens": 2799,
+        "total_tokens": 4976,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "truncated": false,
+      "response": "```json\n{\n  \"diagnosis\": \"The mod's AnimationController currently lacks a triggerable attack animation registration and does not gate the walk/idle loop against an active triggered animation. In GeckoLib 3 (26.1), the trigger API moved to `com.geckolib.animatable.manager.AnimatableManager` and the controller method is `triggerAnimation` (not `tryTriggerAnimation` as in 1.20.1/1.21.x). The StateHandler must check `isPlayingTriggeredAnimation()` before falling through to walk/idle logic, and the controller must be built with `.triggerableAnim(...)` and `.receiveTriggeredAnimations()` so the handler is invoked during the one-shot.\",\n  \"repair_plan\": [\n    \"1. In registerControllers, build the controller with a StateHandler that: (a) returns STOP if isPlayingTriggeredAnimation() is true, (b) returns the walk loop at preserved speed if the entity is moving, (c) returns the idle loop otherwise.\",\n    \"2. Append .triggerableAnim(\\\"attack\\\", <attack RawAnimation>) to the controller builder to register the one-shot.\",\n    \"3. Append .receiveTriggeredAnimations() so the StateHandler is called while the triggered animation plays (allows early-stop or state sync).\",\n    \"4. At the interaction/attack call-site, invoke triggerAnim(\\\"<controller_name>\\\", \\\"attack\\\") guarded by a !level().isClientSide() check (server-authoritative trigger).\",\n    \"5. Add runtime assertions: verify the controller is present in the manager before triggering; verify the triggered animation is non-null after trigger; log a warning if the walk/idle animation names do not resolve.\",\n    \"6. Preserve the original controller name, animation names, and speed values exactly as they appear in the existing code.\"\n  ],\n  \"code_or_pseudocode\": \"```java\\n// --- Controller registration (GeckoLib 3 / 26.1 API) ---\\n@Override\\npublic void registerControllers(AnimatableManager.ControllerRegistrar controllers) {\\n    controllers.add(\\n        new AnimationController<>(this, \\\"main_controller\\\", animTest -> {\\n            // Gate: if a triggered (one-shot) animation is playing, let it finish\\n            if (animTest.isPlayingTriggeredAnimation()) {\\n                return PlayState.STOP;\\n            }\\n\\n            // Walk loop while moving\\n            if (isMoving()) {\\n                return PlayState.CONTINUE(walkAnimation, 1.0f, Animation.LoopType.LOOP);\\n            }\\n\\n            // Idle otherwise\\n            return PlayState.CONTINUE(idleAnimation, 1.0f, Animation.LoopType.LOOP);\\n        })\\n        // Register the one-shot attack\\n        .triggerableAnim(\\\"attack\\\", attackAnimation)\\n        // Ensure StateHandler is invoked during triggered playback\\n        .receiveTriggeredAnimations()\\n    );\\n}\\n\\n// --- Trigger call-site (e.g., mobInteract or attack handler) ---\\n@Override\\npublic InteractionResult mobInteract(Player player, InteractionHand hand) {\\n    if (!level().isClientSide()) {\\n        // Runtime check: ensure controller exists before triggering\\n        AnimatableManager<?> mgr = getAnimatableManager();\\n        if (mgr.getAnimationControllers().containsKey(\\\"main_controller\\\")) {\\n            triggerAnim(\\\"main_controller\\\", \\\"attack\\\");\\n        } else {\\n            LOGGER.warn(\\\"[Mod] Controller 'main_controller' not found; attack trigger skipped.\\\");\\n        }\\n    }\\n    return InteractionResult.sidedSuccess(level().isClientSide());\\n}\\n\\n// --- Runtime validation (call once after registration, e.g., in tick or init) ---\\nprivate void validateAnimations() {\\n    AnimatableManager<?> mgr = getAnimatableManager();\\n    AnimationController<?> ctrl = mgr.getAnimationControllers().get(\\\"main_controller\\\");\\n    if (ctrl == null) {\\n        LOGGER.error(\\\"[Mod] 'main_controller' missing from AnimatableManager.\\\");\\n        return;\\n    }\\n    // Verify triggerable anim is registered\\n    if (ctrl.getTriggeredAnimation() == null && !ctrl.hasTriggerableAnim(\\\"attack\\\")) {\\n        LOGGER.error(\\\"[Mod] Triggerable anim 'attack' not registered on 'main_controller'.\\\");\\n    }\\n    // Verify walk/idle animations resolved (non-null)\\n    if (walkAnimation == null) LOGGER.error(\\\"[Mod] walkAnimation is null.\\\");\\n    if (idleAnimation == null) LOGGER.error(\\\"[Mod] idleAnimation is null.\\\");\\n}\\n```\\n\\nNotes:\\n- `triggerAnim(controllerName, animName)` is the GeoAnimatable convenience that delegates to `AnimatableManager.tryTriggerAnimation(controllerName, animName)` \u2192 `AnimationController.triggerAnimation(animName)` in 26.1.\\n- Speed values (1.0f above) must match the original mod's values; replace with the actual preserved constants.\\n- `isMoving()` should be the entity's existing movement check (e.g., `horizontalSpeed > 0.01`).\",\n  \"validation\": [\n    \"Unit: After registerControllers, assert mgr.getAnimationControllers().get(\\\"main_controller\\\") != null.\",\n    \"Unit: Assert ctrl.getTriggeredAnimation() returns the attack RawAnimation after a triggerAnim call in a test tick.\",\n    \"Integration: Spawn the entity, confirm idle loop plays when stationary (check currentAnimation name).\",\n    \"Integration: Move the entity, confirm walk loop plays and speed matches the preserved constant.\",\n    \"Integration: Trigger attack via mobInteract on server side; confirm the one-shot plays exactly once and the controller returns to idle/walk on completion.\",\n    \"Regression: Trigger attack while walking; confirm walk loop is suppressed (isPlayingTriggeredAnimation gate) and resumes after the one-shot ends.\",\n    \"Runtime: Enable the validateAnimations() check in dev profile; confirm no ERROR logs on clean startup.\"\n  ],\n  \"citations\": [\n    \"GeckoLib_References_26.2/docs/current-wiki/docs/miscellaneous/triggerable-animations.mdx\",\n    \"GeckoLib_References_26.2/source/geckolib/26.1/common/src/main/java/com/geckolib/animatable/manager/AnimatableManager.java\",\n    \"GeckoLib_References_26.2/source/geckolib/1.21.8/common/src/main/java/software/bernie/geckolib/animatable/processing/AnimationController.java\",\n    \"GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/AnimatableManager.java\",\n    \"GeckoLib_References_26.2/source/geckolib/1.21.1/common/src/main/java/software/bernie/geckolib/animation/AnimatableManager.java\"\n  ],\n  \"uncertainties\": [\n    \"The exact package/class path for AnimationController in GeckoLib 3 (26.1) is not shown in the provided evidence; the 1.21.8 source uses software.bernie.geckolib.animatable.processing.AnimationController, but 26.1 may have relocated it under com.geckolib. The triggerableAnim and receiveTriggeredAnimations method signatures are confirmed from 1.21.8 and assumed stable in 26.1.\",\n    \"The PlayState.CONTINUE(anim, speed, loopType) overload signature is not explicitly shown in the provided snippets; it is inferred from standard GeckoLib usage. The exact enum/overload for 26.1 should be verified against the full AnimationController source.\",\n    \"The isMoving() helper and the specific walk/idle/attack RawAnimation field names are mod-specific and not present in the evidence; they must be matched to the existing mod's constants.\",\n    \"Whether triggerAnim on GeoAnimatable in 26.1 still delegates to tryTriggerAnimation or directly to triggerAnimation is not fully shown; the 26.1 AnimatableManager snippet shows tryTriggerAnimation calling controller.triggerAnimation, so the public entry point remains tryTriggerAnimation at the manager level.\"\n  ]\n}\n```"
+    },
+    {
+      "test": "geckolib_migration",
+      "mode": "oracle",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 42.75,
+      "repair_score": 50.0,
+      "format_score": 0.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 0.0,
+      "valid_citations": [],
+      "passages": [
+        {
+          "chunk_id": 21755,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/ContextAwareAnimatableManager.java",
+          "family": "geckolib",
+          "versions": "1.20.1,26.2"
+        },
+        {
+          "chunk_id": 21712,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/AnimatableManager.java",
+          "family": "geckolib",
+          "versions": "1.20.1,26.2"
+        },
+        {
+          "chunk_id": 19347,
+          "path": "GeckoLib_References_26.2/docs/current-wiki/docs/miscellaneous/triggerable-animations.mdx",
+          "family": "geckolib",
+          "versions": "26.2"
+        },
+        {
+          "chunk_id": 24899,
+          "path": "GeckoLib_References_26.2/source/geckolib/26.1/common/src/main/java/com/geckolib/animatable/manager/AnimatableManager.java",
+          "family": "geckolib",
+          "versions": "26.1,26.2"
+        },
+        {
+          "chunk_id": 24236,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.21.8/common/src/main/java/software/bernie/geckolib/animatable/manager/ContextAwareAnimatableManager.java",
+          "family": "geckolib",
+          "versions": "1.21.8,26.2"
+        },
+        {
+          "chunk_id": 22634,
+          "path": "GeckoLib_References_26.2/source/geckolib/1.21.1/common/src/main/java/software/bernie/geckolib/animation/ContextAwareAnimatableManager.java",
+          "family": "geckolib",
+          "versions": "1.21.1,26.2"
+        }
+      ],
+      "seconds": 50.457,
+      "usage": {
+        "completion_tokens": 2200,
+        "prompt_tokens": 2803,
+        "total_tokens": 5003,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "length",
+      "truncated": true,
+      "response": "```json\n{\n  \"diagnosis\": \"The mod needs a GeckoLib AnimationController that (1) plays a walk loop while the entity is moving, (2) plays an idle loop otherwise, and (3) supports a one-shot triggered attack animation. The local evidence confirms the GeckoLib 1.20.1/1.21.x API surface: controllers are registered via AnimatableManager.ControllerRegistrar, triggerable animations are bound with .triggerableAnim(name, anim), and triggered at runtime via tryTriggerAnimation(controllerName, animName) on the AnimatableManager (or triggerAnim on the Animatable entity). The StateHandler lambda receives an AnimationController and returns a PlayState (CONTINUE, TRANSITION, STOP). No evidence in the provided sources shows a 'GeckoLib 3' branded API; the closest matching versioned sources are 1.20.1, 1.21.1, 1.21.8, and 26.1. The 26.1 source renames the internal call to controller.triggerAnimation(animName) vs. controller.tryTriggerAnimation(animName) in 1.20.1/1.21.x, so the exact method name must be confirmed at compile time.\",\n  \"repair_plan\": [\n    \"1. In the entity's registerControllers(AnimatableManager.ControllerRegistrar) method, create a single AnimationController named 'main_controller' with a StateHandler lambda that checks entity movement state and returns PlayState.CONTINUE for walk or idle, and PlayState.STOP otherwise.\",\n    \"2. Chain .triggerableAnim('attack', attackAnimation) on the same controller to register the one-shot attack.\",\n    \"3. In the entity's attack/interact handler, call triggerAnim('main_controller', 'attack') (or animatableManager.tryTriggerAnimation('main_controller', 'attack')) to fire the one-shot.\",\n    \"4. Preserve the original animation names and speeds as defined in the mod's animation resource files; do not rename or rescale.\",\n    \"5. Add runtime null-checks: verify the controller is non-null before triggering, and guard the StateHandler against null entity or null animation references.\",\n    \"6. Verify at compile time whether the target GeckoLib version uses tryTriggerAnimation or triggerAnimation internally (1.20.1/1.21.x use tryTriggerAnimation; 26.1 uses triggerAnimation). The public entry point tryTriggerAnimation(controllerName, animName) is stable across all provided sources.\"\n  ],\n  \"code_or_pseudocode\": \"```java\\n// === Entity class (implements Animatable) ===\\n\\n// Animation references \u2013 preserve original names and speeds from resource files\\nprivate static final Animation WALK_ANIM = AnimationController.loadAnimation(\\\"animation.myentity.walk\\\");\\nprivate static final Animation IDLE_ANIM = AnimationController.loadAnimation(\\\"animation.myentity.idle\\\");\\nprivate static final Animation ATTACK_ANIM = AnimationController.loadAnimation(\\\"animation.myentity.attack\\\");\\n\\n// Controller name \u2013 preserve original\\nprivate static final String CONTROLLER_NAME = \\\"main_controller\\\";\\nprivate static final String ATTACK_TRIGGER = \\\"attack\\\";\\n\\n@Override\\npublic void registerControllers(AnimatableManager.ControllerRegistrar controllers) {\\n    controllers.add(\\n        new AnimationController<>(this, CONTROLLER_NAME, animTest -> {\\n            // Runtime guard: entity may be null during early init\\n            if (this.entity == null) return PlayState.STOP;\\n\\n            // Walk loop while moving, idle otherwise\\n            if (this.entity.isMoving()) {\\n                animTest.setAnimation(WALK_ANIM).loop();\\n                return PlayState.CONTINUE;\\n            } else {\\n                animTest.setAnimation(IDLE_ANIM).loop();\\n                return PlayState.CONTINUE;\\n            }\\n        })\\n        // One triggered attack \u2013 registered per GeckoLib triggerable-anim pattern\\n        .triggerableAnim(ATTACK_TRIGGER, ATTACK_ANIM)\\n    );\\n}\\n\\n// === Attack / interact handler ===\\n@Override\\npublic InteractionResult mobInteract(Player player, InteractionHand hand) {\\n    // Runtime guard: only trigger on server side to avoid double-play\\n    if (!level().isClientSide()) {\\n        // Use the two-arg form to target the specific controller\\n        // (evidence: AnimatableManager.tryTriggerAnimation(String, String))\\n        this.triggerAnim(CONTROLLER_NAME, ATTACK_TRIGGER);\\n    }\\n    return InteractionResult.sidedSuccess(level().isClientSide());\\n}\\n\\n// === Alternative: trigger from AI / tick logic ===\\npublic void performAttack() {\\n    // Runtime null-check on the manager before triggering\\n    AnimatableManager<?> mgr = this.getAnimatableManager();\\n    if (mgr == null) return;\\n\\n    // Two-arg form: targets 'main_controller' specifically\\n    // (evidence: ContextAwareAnimatableManager.tryTriggerAnimation(String, String)\\n    //  delegates to each sub-manager's tryTriggerAnimation(controllerName, animName))\\n    mgr.tryTriggerAnimation(CONTROLLER_NAME, ATTACK_TRIGGER);\\n}\\n```\\n\\n// Pseudocode for StateHandler decision tree (preserving names/speeds):\\n//\\n//   StateHandler(animTest):\\n//     if entity == null \u2192 STOP\\n//     if entity.isMoving() \u2192 setAnimation(WALK_ANIM).loop() \u2192 CONTINUE\\n//     else                \u2192 setAnimation(IDLE_ANIM).loop() \u2192 CONTINUE\\n//\\n//   Triggerable: \\\"attack\\\" \u2192 ATTACK_ANIM (one-shot, no loop)\\n//   Triggered via: triggerAnim(\\\"main_controller\\\", \\\"attack\\\")\",\n  \"validation\": [\n    \"Compile-time: confirm the GeckoLib version on the classpath. If 1.20.1/1.21.x, the internal call is controller.tryTriggerAnimation(animName); if 26.1, it is controller.triggerAnimation(animName). The public entry point tryTriggerAnimation(controllerName, animName) is identical in both (evidence: AnimatableManager.java 1.20.1 and 26.1).\",\n    \"Runtime: after entity spawn, log the controller name from getAnimationControllers().keySet() to verify 'main_controller' is registered.\",\n    \"Runtime: call triggerAnim('main_controller', 'attack') and confirm the attack animation plays exactly once (one-shot) and the controller returns to the StateHandler-driven walk/idle loop.\",\n    \"Runtime: verify that while the entity is stationary, only IDLE_ANIM plays; while moving, only WALK_ANIM plays. No animation name or speed should be altered from the resource file definitions.\",\n    \"Runtime: null-guard \u2013 set entity to null in a test and confirm the StateHandler returns PlayState.STOP without NPE.\",\n    \"Runtime: confirm triggerAnim is called only on the server side (level().isClientSide() == false) to prevent double-triggering on integrated servers.\"\n  ],\n  \"citations\": [\n    \"GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/ContextAwareAnimatableManager.java\",\n    \"GeckoLib_References_26.2/source/geckolib/1.20.1/core/src/main/java/software/bernie/geckolib/core/animation/AnimatableManager.java\",\n    \"GeckoLib_References_26.2/docs/current-wiki/docs/miscellaneous/triggerable-animations.mdx\",\n    \"GeckoLib_References_26.2/source/geckolib/26.1/common/src/main/java/com/geckolib/animatable/manager/AnimatableManager.java\",\n    \"GeckoLib_References_26.2/source/geckolib/1.21.8/common/src/main/java/software/bernie/geckolib/animatable/manager/ContextAwareAnimatableManager.java\",\n    \"GeckoLib_References_26.2/source/geckolib/1.21.1/common/src/main/java/software/bernie/geckolib/animation/ContextAwareAnimatableManager.java\"\n  ],\n  \"uncertainties\": [\n    \"No source in the provided evidence is explicitly labelled 'GeckoLib 3'. The closest versioned sources are 1.20.1, 1.2"
+    },
+    {
+      "test": "mapping_resolution",
+      "mode": "production",
+      "weight": 18,
+      "ok": true,
+      "quality_score": 42.75,
+      "repair_score": 50.0,
+      "format_score": 0.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true,
+        true
+      ],
+      "citation_score": 0.0,
+      "valid_citations": [],
+      "passages": [
+        {
+          "chunk_id": 6212,
+          "path": "_migration_index/VERSION_PROGRESSIONS.md",
+          "family": "migration_index",
+          "versions": "1.12.2,1.20.1,1.21.1,1.21.11,1.21.8,1.7,26.1,26.2"
+        },
+        {
+          "chunk_id": 28567,
+          "path": "Minecraft_MCP_Mappings/1.12.2/mcp_stable_39/_SOURCE.json",
+          "family": "other",
+          "versions": "1.12,1.12.2"
+        },
+        {
+          "chunk_id": 3123,
+          "path": "_harvested_index/VERSION_PROGRESSIONS.md",
+          "family": "harvested_index",
+          "versions": "1.12.2,1.21.1,1.21.11,1.21.8,1.7,26.1,26.2"
+        },
+        {
+          "chunk_id": 34131,
+          "path": "_upstream/mcpconfig/build.gradle",
+          "family": "upstream_mcpconfig",
+          "versions": "1.13,1.16.5,1.2.3,1.4.3"
+        },
+        {
+          "chunk_id": 6211,
+          "path": "_migration_index/VERSION_PROGRESSIONS.md",
+          "family": "migration_index",
+          "versions": "1.12.2,1.20.1,1.21.1,1.21.11,1.21.8,1.7,26.1,26.2"
+        },
+        {
+          "chunk_id": 6176,
+          "path": "_migration_index/VERSION_PROGRESSIONS.md",
+          "family": "migration_index",
+          "versions": "1.12.2,1.20.1,1.21.1,1.21.11,1.21.8,1.7,26.1,26.2"
+        }
+      ],
+      "seconds": 53.153,
+      "usage": {
+        "completion_tokens": 2200,
+        "prompt_tokens": 3192,
+        "total_tokens": 5392,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "length",
+      "truncated": true,
+      "response": "```json\n{\n  \"diagnosis\": \"The converter lacks a deterministic, version-bound SRG-to-readable mapping lookup. The local evidence shows MCP stable_39 CSVs (fields.csv, methods.csv, params.csv) exist for 1.12.2 with obfuscated\u2192readable name pairs, and the MCPConfig build pipeline (build.gradle) confirms the tsrg2 format and MAPPINGS_CSV task as the canonical source. However, no single lookup structure binds all six required keys (version, source namespace, target namespace, symbol kind, owner, descriptor) into one deterministic key, and no ambiguity-rejection logic exists. The CSVs are flat name-pair tables without explicit namespace or descriptor columns visible in the evidence, so the lookup must be constructed by joining the CSV rows with the _SOURCE.json version binding and the tsrg2 structural conventions implied by the build.gradle tooling.\",\n  \"repair_plan\": [\n    \"1. Define a MappingKey record with six fields: mcVersion (String), sourceNamespace (enum: SRG|OFFICIAL), targetNamespace (enum: MCP|MOJMAP|NEOFORGE), symbolKind (enum: FIELD|METHOD|PARAM), owner (String, internal class name), descriptor (String, JVM descriptor).\",\n    \"2. Define a MappingValue record: readableName (String), source (String, e.g. 'mcp_stable_39/fields.csv'), confidence (enum: EXACT|INFERRED).\",\n    \"3. Build an immutable Map<MappingKey, MappingValue> at converter startup by parsing the three CSVs under Minecraft_MCP_Mappings/1.12.2/mcp_stable_39/. Each CSV row yields one or more MappingKey entries. The version is bound from _SOURCE.json ('1.12.2'). The source namespace is SRG (obfuscated), target namespace is MCP (readable). Symbol kind is derived from which CSV file the row came from (fields.csv\u2192FIELD, methods.csv\u2192METHOD, params.csv\u2192PARAM).\",\n    \"4. Ambiguity rejection: during CSV ingestion, if two rows produce the same MappingKey but different readableName values, throw a MappingAmbiguityException carrying both candidate values and their source file/line. Do NOT silently pick one. The map is built with putIfAbsent + conflict detection, not put.\",\n    \"5. Lookup API: a single method MappingLookup.resolve(MappingKey key) returns Optional<MappingValue>. If the key is absent, return Optional.empty() (caller decides whether to fall back or fail). If the key is present, the value is deterministic because the map is immutable and single-valued per key.\",\n    \"6. Version binding: the lookup instance is constructed with a fixed mcVersion string read from _SOURCE.json. Any MappingKey whose mcVersion does not match the instance version is rejected at construction time (fail-fast), preventing cross-version contamination.\",\n    \"7. Namespace binding: the instance is constructed with a fixed (sourceNamespace, targetNamespace) pair. For the 1.12.2 MCP stable_39 corpus this is (SRG, MCP). A lookup for (OFFICIAL, MOJMAP) would require a different CSV corpus and a different instance.\",\n    \"8. Descriptor handling: for methods, the descriptor includes parameter types and return type (e.g. '(Lnet/minecraft/entity/Entity;)V'). For fields, the descriptor is the field type (e.g. 'I'). For params, the descriptor is the parameter type. The CSVs must be parsed to extract or synthesize these; if the CSV lacks a descriptor column, the converter must join with the tsrg2 structural data (implied by build.gradle's --mapping-format tsrg2) to recover descriptors.\",\n    \"9. Determinism guarantee: the map is built once, stored in a ConcurrentHashMap or unmodifiable HashMap, and never mutated. Iteration order is irrelevant because lookup is by key, not by index. No randomness, no clock, no thread-local state in the lookup path.\"\n  ],\n  \"code_or_pseudocode\": \"package converter.mapping;\\n\\nimport java.util.*;\\nimport java.util.concurrent.ConcurrentHashMap;\\n\\n// \u2500\u2500 Key \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\npublic record MappingKey(\\n    String  mcVersion,        // e.g. \\\"1.12.2\\\" \u2013 bound from _SOURCE.json\\n    Namespace sourceNamespace, // SRG | OFFICIAL\\n    Namespace targetNamespace, // MCP | MOJMAP | NEOFORGE\\n    SymbolKind symbolKind,     // FIELD | METHOD | PARAM\\n    String  owner,             // internal class, e.g. \\\"net/minecraft/entity/Entity\\\"\\n    String  descriptor         // JVM descriptor, e.g. \\\"(Lnet/minecraft/entity/Entity;)V\\\"\\n) implements Comparable<MappingKey> {\\n    public enum Namespace { SRG, OFFICIAL, MCP, MOJMAP, NEOFORGE }\\n    public enum SymbolKind { FIELD, METHOD, PARAM }\\n\\n    @Override public int compareTo(MappingKey o) {\\n        int c = mcVersion.compareTo(o.mcVersion);\\n        if (c != 0) return c;\\n        c = sourceNamespace.compareTo(o.sourceNamespace);\\n        if (c != 0) return c;\\n        c = targetNamespace.compareTo(o.targetNamespace);\\n        if (c != 0) return c;\\n        c = symbolKind.compareTo(o.symbolKind);\\n        if (c != 0) return c;\\n        c = owner.compareTo(o.owner);\\n        if (c != 0) return c;\\n        return descriptor.compareTo(o.descriptor);\\n    }\\n}\\n\\n// \u2500\u2500 Value \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\npublic record MappingValue(\\n    String readableName,   // e.g. \\\"getEntityId\\\"\\n    String sourceFile,     // e.g. \\\"mcp_stable_39/methods.csv\\\"\\n    int    sourceLine      // 1-based line in CSV for diagnostics\\n) {}\\n\\n// \u2500\u2500 Ambiguity exception \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\npublic class MappingAmbiguityException extends RuntimeException {\\n    private final MappingKey key;\\n    private final MappingValue existing;\\n    private final MappingValue incoming;\\n\\n    public MappingAmbiguityException(MappingKey key, MappingValue existing, MappingValue incoming) {\\n        super(String.format(\\n            \\\"Ambiguous mapping for %s: existing=%s (line %d) vs incoming=%s (line %d)\\\",\\n            key, existing.readableName(), existing.sourceLine(),\\n            incoming.readableName(), incoming.sourceLine()));\\n        this.key = key; this.existing = existing; this.incoming = incoming;\\n    }\\n    public MappingKey getKey() { return key; }\\n    public MappingValue getExisting() { return existing; }\\n    public MappingValue getIncoming() { return incoming; }\\n}\\n\\n// \u2500\u2500 Lookup (immutable, deterministic) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\npublic final class MappingLookup {\\n    private final String mcVersion;\\n    private final MappingKey.Namespace sourceNs;\\n    private final MappingKey.Namespace targetNs;\\n    private final Map<MappingKey, MappingValue> table;\\n\\n    private MappingLookup(String mcVersion,\\n                          MappingKey.Namespace sourceNs,\\n                          MappingKey.Namespace targetNs,\\n                          Map<MappingKey, MappingValue> table) {\\n        this.mcVersion = mcVersion;\\n        this.sourceNs  = sourceNs;\\n        this.targetNs  = targetNs;\\n        this.table     = Collections.unmodifiableMap(table);\\n    }\\n\\n    /** Deterministic single-key lookup. Returns empty if not found. */\\n    public Optional<MappingValue> resolve(MappingKey key) {\\n        if (!key.mcVersion().equals(mcVersion))\\n            throw new IllegalArgumentException(\\n                \\\"Version mismatch: lookup bound to \\\" + mcVersion + \\\" but key says \\\" + key.mcVersion());\\n        if (key.sourceNamespace() != sourceNs || key.targetNamespace() != targetNs)\\n            throw new IllegalArgumentException(\\n                \\\"Namespace mismatch: lookup bound to \\\" + sourceNs + \\\"\u2192\\\" + targetNs\\n                + \\\" but key says \\\" + key.sourceNamespace() + \\\"\u2192\\\" + key.targetNamespace());\\n        return Optional.ofNullable(table.get(key));\\n    }\\n\\n    public int size()"
+    },
+    {
+      "test": "mapping_resolution",
+      "mode": "oracle",
+      "weight": 18,
+      "ok": true,
+      "quality_score": 42.75,
+      "repair_score": 50.0,
+      "format_score": 0.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true,
+        true
+      ],
+      "citation_score": 0.0,
+      "valid_citations": [],
+      "passages": [
+        {
+          "chunk_id": 81873,
+          "path": "_upstream/moddevgradle/src/legacy/java/net/neoforged/moddevgradle/legacyforge/internal/LegacyForgeModDevPlugin.java",
+          "family": "other",
+          "versions": "1.20.1"
+        },
+        {
+          "chunk_id": 28567,
+          "path": "Minecraft_MCP_Mappings/1.12.2/mcp_stable_39/_SOURCE.json",
+          "family": "other",
+          "versions": "1.12,1.12.2"
+        },
+        {
+          "chunk_id": 65007,
+          "path": "_upstream/mcpconfig/versions/release/1.13.2/config.json",
+          "family": "upstream_mcpconfig",
+          "versions": "1.0.1,1.13.2,1.5,1.8.3"
+        },
+        {
+          "chunk_id": 64689,
+          "path": "_upstream/mcpconfig/versions/release/1.13.1/config.json",
+          "family": "upstream_mcpconfig",
+          "versions": "1.0.1,1.13.1,1.5,1.8.3"
+        },
+        {
+          "chunk_id": 64375,
+          "path": "_upstream/mcpconfig/versions/release/1.13/config.json",
+          "family": "upstream_mcpconfig",
+          "versions": "1.0.1,1.13,1.5,1.8.3"
+        },
+        {
+          "chunk_id": 34161,
+          "path": "_upstream/mcpconfig/README.md",
+          "family": "upstream_mcpconfig",
+          "versions": ""
+        }
+      ],
+      "seconds": 53.104,
+      "usage": {
+        "completion_tokens": 2200,
+        "prompt_tokens": 2454,
+        "total_tokens": 4654,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "length",
+      "truncated": true,
+      "response": "```json\n{\n  \"diagnosis\": \"The converter lacks a deterministic, version-bound SRG-to-readable lookup. Evidence shows two distinct mapping artifacts per version: a .tsrg (named\u2192intermediate) and a .srg (intermediate\u2192named), plus a CSV zip. The LegacyForgeModDevPlugin explicitly notes 'TSRG is not supported' for the SRG\u2192named direction, meaning the converter must consume the .srg file. MCPConfig's rename step uses SpecialSource with --srg-in, confirming SRG is the canonical wire format. The 1.12.2 _SOURCE.json binds mappings to a specific MC version (1.12.2) and MCP channel (stable_39), proving version+namespace must be part of the key. No existing code in the evidence performs ambiguity rejection or multi-key binding; the converter must be designed from scratch with a composite key that includes version, source namespace, target namespace, symbol kind, owner, and descriptor.\",\n  \"repair_plan\": [\n    \"Define an immutable MappingKey record with fields: mcVersion (String), sourceNamespace (enum: SRG, INTERMEDIATE, NAMED), targetNamespace (enum: NAMED, INTERMEDIATE, SRG), symbolKind (enum: CLASS, FIELD, METHOD), owner (String, dot-separated), descriptor (String, JVM descriptor).\",\n    \"Define a MappingEntry record with: key (MappingKey), sourceName (String), targetName (String), sourceFile (Path) for provenance.\",\n    \"Implement SrgToReadableLookup as a final class holding a Map<MappingKey, MappingEntry> built at construction time from a parsed .srg file.\",\n    \"Parse the .srg file: lines starting with 'CL:' are class mappings, 'FD:' are field mappings, 'MD:' are method mappings. Each line yields owner, sourceName, targetName, and for methods the descriptor is the remainder after the target name.\",\n    \"Bind version and namespaces at construction: the caller must supply mcVersion, sourceNamespace=SRG, targetNamespace=NAMED. The parser stamps every entry's key with these values.\",\n    \"Reject ambiguity: if two entries produce the same MappingKey (same version+namespaces+kind+owner+descriptor) but different targetName, throw an AmbiguousMappingException listing both source names and the source file/line.\",\n    \"Lookup method: lookup(MappingKey) returns Optional<MappingEntry>. If the key's sourceNamespace is not SRG or targetNamespace is not NAMED, throw IllegalArgumentException immediately (fail-fast, no silent fallback).\",\n    \"Do NOT accept .tsrg for the SRG\u2192named direction. If a .tsrg path is passed, throw UnsupportedMappingFormatException with the message referencing the LegacyForgeModDevPlugin constraint.\",\n    \"For 1.12.2 legacy: the _SOURCE.json indicates MCP stable_39 uses 'MCPConfig joined.tsrg'. The converter must detect version < 1.13 and, if only a .tsrg is available, either (a) reject with a clear error, or (b) accept a pre-converted .srg. Do not silently parse TSRG as SRG.\"\n  ],\n  \"code_or_pseudocode\": \"package com.example.converter;\\n\\nimport java.io.*;\\nimport java.nio.file.*;\\nimport java.util.*;\\nimport java.util.stream.*;\\n\\n// \u2500\u2500\u2500 Key & Entry \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\\npublic record MappingKey(\\n    String mcVersion,\\n    Namespace sourceNamespace,\\n    Namespace targetNamespace,\\n    SymbolKind symbolKind,\\n    String owner,          // dot-separated, e.g. \\\"net.minecraft.entity.Entity\\\"\\n    String descriptor      // JVM descriptor, e.g. \\\"()V\\\" or \\\"I\\\"; empty for classes\\n) {\\n    public enum Namespace { SRG, INTERMEDIATE, NAMED }\\n    public enum SymbolKind { CLASS, FIELD, METHOD }\\n}\\n\\npublic record MappingEntry(\\n    MappingKey key,\\n    String sourceName,\\n    String targetName,\\n    Path sourceFile,\\n    int sourceLine\\n) {}\\n\\n// \u2500\u2500\u2500 Exceptions \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\\npublic class AmbiguousMappingException extends RuntimeException {\\n    public AmbiguousMappingException(MappingKey key, String existing, String incoming, Path file, int line) {\\n        super(String.format(\\n            \\\"Ambiguous mapping for %s: existing target '%s' (from %s) conflicts with '%s' (line %d in %s)\\\",\\n            key, existing, \\\"prior entry\\\", incoming, line, file));\\n    }\\n}\\n\\npublic class UnsupportedMappingFormatException extends RuntimeException {\\n    public UnsupportedMappingFormatException(Path file) {\\n        super(\\\"Expected .srg but got \\\" + file.getFileName() +\\n              \\\". TSRG is not supported for SRG\u2192named lookup (see LegacyForgeModDevPlugin constraint).\\\" +\\n              \\\" Convert to SRG first or supply the intermediateToNamed.srg artifact.\\\");\\n    }\\n}\\n\\n// \u2500\u2500\u2500 Lookup \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\\npublic final class SrgToReadableLookup {\\n\\n    private final Map<MappingKey, MappingEntry> index;\\n    private final String mcVersion;\\n\\n    private SrgToReadableLookup(String mcVersion, Map<MappingKey, MappingEntry> index) {\\n        this.mcVersion = mcVersion;\\n        this.index = Collections.unmodifiableMap(index);\\n    }\\n\\n    /**\\n     * Build the lookup from a .srg file.\\n     * @param mcVersion  e.g. \\\"1.12.2\\\", \\\"1.13.2\\\"\\n     * @param srgFile    path to intermediateToNamed.srg (NOT .tsrg)\\n     * @throws UnsupportedMappingFormatException if file extension is not .srg\\n     * @throws AmbiguousMappingException if duplicate keys with different targets\\n     */\\n    public static SrgToReadableLookup build(String mcVersion, Path srgFile) throws IOException {\\n        if (!srgFile.getFileName().toString().endsWith(\\\".srg\\\")) {\\n            throw new UnsupportedMappingFormatException(srgFile);\\n        }\\n\\n        Map<MappingKey, MappingEntry> map = new HashMap<>();\\n        Namespace src = MappingKey.Namespace.SRG;\\n        Namespace tgt = MappingKey.Namespace.NAMED;\\n\\n        try (BufferedReader br = Files.newBufferedReader(srgFile)) {\\n            String line;\\n            int lineNo = 0;\\n            while ((line = br.readLine()) != null) {\\n                lineNo++;\\n                line = line.trim();\\n                if (line.isEmpty() || line.startsWith(\\\"#\\\") || line.startsWith(\\\"#\\\")) continue;\\n\\n                if (line.startsWith(\\\"CL:\\\")) {\\n                    String rest = line.substring(3).trim();\\n                    String[] parts = rest.split(\\\"\\\\\\\\s+\\\", 2);\\n                    if (parts.length < 2) continue;\\n                    String srgName = parts[0];\\n                    String namedName = parts[1];\\n                    String owner = srgName.replace('/', '.');\\n                    MappingKey key = new MappingKey(mcVersion, src, tgt, MappingKey.SymbolKind.CLASS, owner, \\\"\\\");\\n                    putOrReject(map, key, srgName, namedName, srgFile, lineNo);\\n\\n                } else if (line.startsWith(\\\"FD:\\\")) {\\n                    String rest = line.substring(3).trim();\\n                    // FD: <owner> <srgName> <namedName> <descriptor>\\n                    String[] parts = rest.split(\\\"\\\\\\\\s+\\\", 4);\\n                    if (parts.length < 4) continue;\\n                    String owner = parts[0].replace('/', '.');\\n                    String srgName = parts[1];\\n                    String namedName = parts[2];\\n                    String desc = parts[3];\\n                    MappingKey key = new MappingKey(mcVersion, src, tgt, MappingKey.SymbolKind.FIELD, owner, desc);\\n                    putOrReject(map, key, srgName, namedName, srgFile, lineNo);\\n\\n                } else if (line.startsWith(\\\"MD:\\\")) {\\n                    String rest = line.substring(3).trim();\\"
+    },
+    {
+      "test": "capability_lifecycle",
+      "mode": "production",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 42.75,
+      "repair_score": 50.0,
+      "format_score": 0.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 0.0,
+      "valid_citations": [],
+      "passages": [
+        {
+          "chunk_id": 36154,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 36162,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 37859,
+          "path": "_upstream/forge/src/main/java/net/minecraftforge/common/util/LazyOptional.java",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 35987,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/boat/ChestBoat.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 35992,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/minecart/AbstractMinecartContainer.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 36160,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChestBlockEntity.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        }
+      ],
+      "seconds": 52.955,
+      "usage": {
+        "completion_tokens": 2200,
+        "prompt_tokens": 2453,
+        "total_tokens": 4653,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "length",
+      "truncated": true,
+      "response": "```json\n{\n  \"diagnosis\": \"The block-entity capability is stored in a single LazyOptional field that is (a) never invalidated when the block entity's state changes or it is removed from the world, so pipes/cables keep a stale reference forever, and (b) returned unconditionally for every Direction, so a sided block (e.g. a furnace with input/output sides) exposes the same IItemHandler on all six faces. The upstream Forge patches for BaseContainerBlockEntity, ChiseledBookShelfBlockEntity, and ChestBlockEntity all demonstrate the correct lifecycle: invalidateCaps() must call LazyOptional.invalidate(), reviveCaps() must re-create the LazyOptional, and getCapability() must guard on a validity flag (remove / isAlive / block-state change). The mod's block entity is missing all three.\",\n  \"repair_plan\": [\n    \"1. Replace the single cached LazyOptional with a per-side map (Map<Direction, LazyOptional<IItemHandler>>) so each face can expose a different handler (e.g. input vs output vs inventory).\",\n    \"2. Override getCapability(Capability, Direction) to: (a) guard on !this.remove (or equivalent alive check), (b) lazily create the per-side handler on first access, (c) return the side-specific LazyOptional, (d) fall through to super for other capabilities.\",\n    \"3. Override invalidateCaps() to call super.invalidateCaps() and then invalidate every LazyOptional in the map (or null the map and invalidate the single reference).\",\n    \"4. Override reviveCaps() to call super.reviveCaps() and clear/re-initialise the map so handlers are re-created lazily on next access.\",\n    \"5. If the block entity's logical state can change while in the world (e.g. setBlockState for a double-chest merge, or a custom 'facing' change), invalidate the affected side(s) at that point, mirroring ChestBlockEntity.setBlockState which nulls and invalidates chestHandler.\",\n    \"6. Ensure the IItemHandler implementations returned per side are thin wrappers that delegate to the correct internal slots, so a pipe reading the 'top' side does not see the 'bottom' side's slots.\"\n  ],\n  \"code_or_pseudocode\": \"public class MyBlockEntity extends BlockEntity implements Container {\\n\\n    // Per-side capability cache; key is the Direction the capability was requested for.\\n    private final Map<Direction, LazyOptional<IItemHandler>> sideHandlers = new EnumMap<>(Direction.class);\\n\\n    // --- Capability lookup (sided) ---\\n    @Override\\n    public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {\\n        if (cap == ForgeCapabilities.ITEM_HANDLER && !this.remove) {\\n            Direction effectiveSide = (side != null) ? side : Direction.DOWN;\\n            return sideHandlers\\n                    .computeIfAbsent(effectiveSide, d -> LazyOptional.of(() -> createHandlerFor(d)))\\n                    .cast();\\n        }\\n        return super.getCapability(cap, side);\\n    }\\n\\n    // Factory: return a different IItemHandler per side.\\n    // Example: top = output, bottom = input, others = full inventory.\\n    private IItemHandler createHandlerFor(Direction side) {\\n        switch (side) {\\n            case UP:    return new SidedHandler(this, 0, 1);   // output slot 0\\n            case DOWN:  return new SidedHandler(this, 1, 2);   // input slot 1\\n            default:    return new InvWrapper(this);            // full inventory\\n        }\\n    }\\n\\n    // --- Lifecycle: invalidate when BE is removed / chunk unloads ---\\n    @Override\\n    public void invalidateCaps() {\\n        super.invalidateCaps();\\n        for (LazyOptional<IItemHandler> lo : sideHandlers.values()) {\\n            lo.invalidate();\\n        }\\n        sideHandlers.clear();\\n    }\\n\\n    // --- Lifecycle: revive when BE is re-added / chunk reloads ---\\n    @Override\\n    public void reviveCaps() {\\n        super.reviveCaps();\\n        sideHandlers.clear(); // handlers will be re-created lazily on next getCapability\\n    }\\n\\n    // --- State-change hook (mirror ChestBlockEntity.setBlockState pattern) ---\\n    @Override\\n    public void setBlockState(BlockState state) {\\n        super.setBlockState(state);\\n        // If the logical container changed (e.g. double-chest merge/split),\\n        // invalidate all cached side handlers so pipes re-query.\\n        for (LazyOptional<IItemHandler> lo : sideHandlers.values()) {\\n            lo.invalidate();\\n        }\\n        sideHandlers.clear();\\n    }\\n\\n    // Minimal sided wrapper (illustrative; real mod would implement IItemHandler)\\n    private static class SidedHandler implements IItemHandler {\\n        private final Container owner;\\n        private final int start, end;\\n        SidedHandler(Container owner, int start, int end) { this.owner = owner; this.start = start; this.end = end; }\\n        @Override public int getSlots() { return end - start; }\\n        @Override public ItemStack getStackInSlot(int s) { return owner.getItem(s + start); }\\n        @Override public ItemStack insertItem(int s, ItemStack stack, boolean simulate) { /* delegate */ return ItemStack.EMPTY; }\\n        @Override public ItemStack extractItem(int s, int amount, boolean simulate) { /* delegate */ return ItemStack.EMPTY; }\\n        @Override public int getSlotLimit(int s) { return 64; }\\n        @Override public boolean isItemValid(int s, ItemStack stack) { return true; }\\n    }\\n}\",\n  \"validation\": [\n    \"Unit test: create the BE, call getCapability(ITEM_HANDLER, UP) and getCapability(ITEM_HANDLER, DOWN); assert the returned IItemHandler instances are NOT the same object and expose different slot counts.\",\n    \"Unit test: call invalidateCaps(); then call getCapability(ITEM_HANDLER, UP); assert the previously returned LazyOptional reports isPresent() == false (listeners were notified) and a new handler is created on next access.\",\n    \"Unit test: call reviveCaps() after invalidateCaps(); assert getCapability returns a fresh, valid LazyOptional.\",\n    \"Integration test (in-game): place the block, connect a pipe to the top face, then break and re-place the block; verify the pipe re-queries the capability (no stale reference) by checking that item transfer resumes correctly.\",\n    \"Integration test: change the block's facing (e.g. rotate a furnace); verify setBlockState invalidates cached handlers and the pipe re-reads the correct side.\",\n    \"Static check: confirm no code path returns a LazyOptional after the BE's 'remove' flag is true (guard in getCapability).\"\n  ],\n  \"citations\": [\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java.patch\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java.patch\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChestBlockEntity.java.patch\",\n    \"_upstream/forge/src/main/java/net/minecraftforge/common/util/LazyOptional.java\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/boat/ChestBoat.java.patch\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/minecart/AbstractMinecartContainer.java.patch\"\n  ],\n  \"uncertainties\": [\n    \"The exact class name and package of the mod's block entity are not provided; the pseudocode uses a generic 'MyBlockEntity extends BlockEntity implements Container'. The repair must be adapted to the actual class hierarchy (e.g. if it extends BaseContainerBlockEntity, the super.getCapability call chain already handles some cases).\",\n    \"The specific sided semantics (which slots map to which face) are mod-specific and not derivable from the local evidence; the SidedHandler slot ranges in the pseudocode are illustrative.\",\n    \"Whether the mod's BE uses a 'remove' field (BlockEntity) or an 'isAlive' check (Entity) for validity is not confirmed; both patterns"
+    },
+    {
+      "test": "capability_lifecycle",
+      "mode": "oracle",
+      "weight": 16,
+      "ok": true,
+      "quality_score": 100.0,
+      "repair_score": 100.0,
+      "format_score": 100.0,
+      "retrieval_recall": 100.0,
+      "retrieval_hits": [
+        true,
+        true
+      ],
+      "citation_score": 100.0,
+      "valid_citations": [
+        "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java.patch",
+        "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java.patch",
+        "_upstream/forge/src/main/java/net/minecraftforge/common/util/LazyOptional.java",
+        "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChestBlockEntity.java.patch",
+        "_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/boat/ChestBoat.java.patch",
+        "_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/minecart/AbstractMinecartContainer.java.patch"
+      ],
+      "passages": [
+        {
+          "chunk_id": 36154,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 36162,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 37859,
+          "path": "_upstream/forge/src/main/java/net/minecraftforge/common/util/LazyOptional.java",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 35987,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/boat/ChestBoat.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 35992,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/minecart/AbstractMinecartContainer.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        },
+        {
+          "chunk_id": 36160,
+          "path": "_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChestBlockEntity.java.patch",
+          "family": "upstream_forge",
+          "versions": ""
+        }
+      ],
+      "seconds": 48.865,
+      "usage": {
+        "completion_tokens": 2181,
+        "prompt_tokens": 2453,
+        "total_tokens": 4634,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "truncated": false,
+      "response": "```json\n{\n  \"diagnosis\": \"The block-entity capability is stored in a single LazyOptional that is created once and never re-evaluated per side. The getCapability method ignores the Direction parameter, returning the identical IItemHandler for all six faces. Additionally, if the block entity's state changes (e.g., block state update, neighbor change) without a full invalidate/revive cycle, the cached handler becomes stale. The LazyOptional.invalidate() method (evidence: LazyOptional.java) sets isValid=false and notifies listeners, but if invalidateCaps() is never called on state transitions, the cache persists indefinitely.\",\n  \"repair_plan\": [\n    \"Replace the single LazyOptional with a per-side array (Direction[6]) of LazyOptional<IItemHandler> so each face can expose a distinct handler.\",\n    \"Override getCapability to index into the per-side array using the Direction parameter, returning LazyOptional.empty() for sides that should not expose the capability.\",\n    \"Add a createSidedHandler(Direction) factory that returns different IItemHandler implementations per face (e.g., SidedInvWrapper or a custom handler that restricts slots/operations by side).\",\n    \"Override setBlockState to invalidate all per-side LazyOptionals (mirroring ChestBlockEntity pattern from evidence) so state changes force re-creation on next access.\",\n    \"Override invalidateCaps() to iterate all six sides and call invalidate() on each non-null LazyOptional.\",\n    \"Override reviveCaps() to null out all per-side LazyOptionals so they are lazily re-created on next getCapability call.\",\n    \"Guard getCapability with a !this.remove check (as seen in BaseContainerBlockEntity and ChestBlockEntity patches) to prevent returning a handler after the block entity is marked for removal.\"\n  ],\n  \"code_or_pseudocode\": \"public class MyBlockEntity extends BaseContainerBlockEntity {\\n\\n    // Per-side capability cache: index 0=NORTH, 1=SOUTH, 2=WEST, 3=EAST, 4=UP, 5=DOWN\\n    private LazyOptional<IItemHandler>[] sidedHandlers = new LazyOptional[6];\\n\\n    @SuppressWarnings(\\\"unchecked\\\")\\n    public MyBlockEntity(BlockEntityType<?> type, BlockState state) {\\n        super(type, state);\\n        for (int i = 0; i < 6; i++) {\\n            sidedHandlers[i] = null; // lazily created on first access\\n        }\\n    }\\n\\n    // --- Sided factory: different handler per face ---\\n    private IItemHandler createSidedHandler(Direction side) {\\n        // Example: top face is input-only, bottom is output-only, sides are full access\\n        switch (side) {\\n            case UP:\\n                return new SidedInvWrapper(this, side, SlotType.INPUT_ONLY);\\n            case DOWN:\\n                return new SidedInvWrapper(this, side, SlotType.OUTPUT_ONLY);\\n            default:\\n                return new SidedInvWrapper(this, side, SlotType.FULL);\\n        }\\n    }\\n\\n    // --- Capability lookup: respects side ---\\n    @Override\\n    public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {\\n        if (cap == ForgeCapabilities.ITEM_HANDLER && !this.remove) {\\n            if (side == null) {\\n                // No side: return a combined or default handler\\n                return LazyOptional.of(() -> (T) createSidedHandler(Direction.UP)).cast();\\n            }\\n            int idx = side.ordinal();\\n            if (sidedHandlers[idx] == null) {\\n                sidedHandlers[idx] = LazyOptional.of(() -> createSidedHandler(side));\\n            }\\n            return sidedHandlers[idx].cast();\\n        }\\n        return super.getCapability(cap, side);\\n    }\\n\\n    // --- Lifecycle: invalidate on state change ---\\n    @Override\\n    public void setBlockState(BlockState state) {\\n        super.setBlockState(state);\\n        invalidateAllSidedHandlers();\\n    }\\n\\n    private void invalidateAllSidedHandlers() {\\n        for (int i = 0; i < 6; i++) {\\n            if (sidedHandlers[i] != null) {\\n                LazyOptional<IItemHandler> old = sidedHandlers[i];\\n                sidedHandlers[i] = null;\\n                old.invalidate(); // sets isValid=false, notifies listeners (LazyOptional.java)\\n            }\\n        }\\n    }\\n\\n    // --- Lifecycle: full invalidation (chunk unload, block removed) ---\\n    @Override\\n    public void invalidateCaps() {\\n        super.invalidateCaps();\\n        invalidateAllSidedHandlers();\\n    }\\n\\n    // --- Lifecycle: revival (chunk reload) ---\\n    @Override\\n    public void reviveCaps() {\\n        super.reviveCaps();\\n        // Null out so they are lazily re-created; do NOT pre-create\\n        for (int i = 0; i < 6; i++) {\\n            sidedHandlers[i] = null;\\n        }\\n    }\\n\\n    // --- Validation helper for external consumers ---\\n    public boolean isCapabilityValid(Direction side) {\\n        if (side == null || this.remove) return false;\\n        LazyOptional<IItemHandler> opt = sidedHandlers[side.ordinal()];\\n        return opt != null && opt.isPresent();\\n    }\\n}\",\n  \"validation\": [\n    \"Unit test: call getCapability(ITEM_HANDLER, UP) and getCapability(ITEM_HANDLER, DOWN) on a fresh block entity; assert the returned IItemHandler instances are NOT the same object and have different slot-access semantics.\",\n    \"Unit test: call setBlockState with a different state; then call getCapability again; assert the old handler's LazyOptional.isPresent() returns false (invalidate was called) and a new handler is created.\",\n    \"Unit test: call invalidateCaps(); assert all six LazyOptionals report isPresent()==false and listeners were notified (per LazyOptional.invalidate() contract).\",\n    \"Unit test: call reviveCaps() after invalidateCaps(); assert getCapability returns a fresh valid handler on next access.\",\n    \"Integration test: place the block, connect a pipe to the top face, verify items flow in; connect to bottom face, verify items flow out; connect to a side face, verify full access.\",\n    \"Regression test: remove the block (set remove=true); assert getCapability returns LazyOptional.empty() for all sides.\"\n  ],\n  \"citations\": [\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java.patch\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java.patch\",\n    \"_upstream/forge/src/main/java/net/minecraftforge/common/util/LazyOptional.java\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/level/block/entity/ChestBlockEntity.java.patch\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/boat/ChestBoat.java.patch\",\n    \"_upstream/forge/patches/minecraft/net/minecraft/world/entity/vehicle/minecart/AbstractMinecartContainer.java.patch\"\n  ],\n  \"uncertainties\": [\n    \"The exact SidedInvWrapper class and SlotType enum are not present in the local evidence; they are assumed to exist in the mod's own package. If they do not, a custom IItemHandler implementation per side must be written.\",\n    \"Whether the target block entity extends BaseContainerBlockEntity (which already provides a single-sided handler) or a plain BlockEntity affects whether the super.getCapability call will also return a handler for ITEM_HANDLER, potentially causing a double-exposure. The repair assumes the mod's block entity does NOT inherit the BaseContainerBlockEntity patch's handler, or that the override fully replaces it.\",\n    \"The Direction.ordinal() mapping (0=NORTH..5=DOWN) is standard Minecraft but not explicitly confirmed in the provided evidence; it is inferred from the Direction enum's standard ordering.\",\n    \"Whether ForgeCapabilities.ITEM_HANDLER is the only capability of interest or whether other capabilities (e.g., energy) also need per-side treatment is not specified in the task.\"\n  ]\n}\n```"
+    }
+  ]
+}

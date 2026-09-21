@@ -1,0 +1,10 @@
+﻿{
+    "model":  "eve-27b-xeno-hat-deepseek-v4-flash-q4km",
+    "startup":  "ok",
+    "startup_seconds":  10.6,
+    "pid":  35924,
+    "gpu_used_mib":  18804,
+    "report":  "C:\\GokuCodexAI\\benchmarks\\eve27b-b11057-retest-20260920-125253\\eve-27b-xeno-hat-deepseek-v4-flash-q4km.stage3.json",
+    "benchmark_exit":  0,
+    "elapsed_seconds":  405.35
+}

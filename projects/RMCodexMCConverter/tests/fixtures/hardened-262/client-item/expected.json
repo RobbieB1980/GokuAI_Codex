@@ -1,0 +1,7 @@
+{
+    "model":  {
+                  "type":  "minecraft:model",
+                  "model":  "example:item/template_spawn_egg"
+              },
+    "comment":  "minecraft:item/template_spawn_egg"
+}

@@ -1,8 +1,8 @@
-﻿function ConvertTo-NormalizedMinecraftVersion {
+function ConvertTo-NormalizedMinecraftVersion {
     [CmdletBinding()]
     param([AllowEmptyString()][string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
-    $hits = [regex]::Matches($Value, '(?<!\d)(?:1\.(?:20|21)\.\d+|2[2-6](?:\.\d+){1,3})(?!\d)')
+    $hits = [regex]::Matches($Value, '(?<![\d.])(?:1\.(?:20|21)\.\d+|2[2-6](?:\.\d+){1,3})(?![\d.])')
     if ($hits.Count -eq 0) { return '' }
     return $hits[0].Value
 }
@@ -307,12 +307,20 @@ function Get-PrimerChangeIndex {
 function Get-PrimerMigrationChain {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$SourceVersion, $Index = (Get-PrimerChangeIndex))
+    $normalized = ConvertTo-NormalizedMinecraftVersion $SourceVersion
+    if ($normalized) { $SourceVersion = $normalized }
     $aliases = @{
-        '1.20.2'='1.20.1'; '1.20.3'='1.20.1'; '1.20.4'='1.20.4'; '1.21.0'='1.21'; '1.21.2'='1.21.2/3'; '1.21.3'='1.21.2/3'
+        '1.20.2'='1.20.1'; '1.20.3'='1.20.1'; '1.20.4'='1.20.4'; '1.21.0'='1.21'
+        '1.21.2'='1.21.2/3'; '1.21.3'='1.21.2/3'
         '26.1.1'='26.1'; '26.1.2'='26.1'
     }
-    $start = if ($aliases.ContainsKey($SourceVersion)) { $aliases[$SourceVersion] } else { $SourceVersion }
-    if ($SourceVersion -match '^(?:2[2-5]\.|26\.[01](?:\.|$))') { $start = '26.1' }
+    $start = if ($SourceVersion -match '^2[2-5]\.' -or $SourceVersion -match '^26\.[01](?:\.|$)') {
+        '26.1'
+    } elseif ($aliases.ContainsKey($SourceVersion)) {
+        $aliases[$SourceVersion]
+    } else {
+        $SourceVersion
+    }
     $all = @($Index.transitions)
     $position = -1
     for ($i = 0; $i -lt $all.Count; $i++) { if ($all[$i].from -eq $start) { $position = $i; break } }
@@ -416,7 +424,6 @@ function Merge-SolvedConversionsIntoProfile {
     $matched = @(Find-MatchingSolvedConversions -Profile $Profile -ModId $ModId -Index $Index)
     $passes = New-Object System.Collections.Generic.List[string]
     foreach ($p in @($Profile.RecommendedPasses)) { if ($p -and -not ($passes -contains $p)) { $passes.Add([string]$p) | Out-Null } }
-    $rules = New-Object System.Collections.Generic.List[string]
     $transforms = New-Object System.Collections.Generic.List[string]
     $applied = New-Object System.Collections.Generic.List[object]
     $stopMessage = $null
@@ -424,9 +431,6 @@ function Merge-SolvedConversionsIntoProfile {
     foreach ($m in $matched) {
         foreach ($p in @($m.forcePasses)) {
             if ($p -and -not ($passes -contains $p)) { $passes.Add([string]$p) | Out-Null }
-        }
-        foreach ($r in @($m.forceRules)) {
-            if ($r -and -not ($rules -contains $r)) { $rules.Add([string]$r) | Out-Null }
         }
         foreach ($t in @($m.transforms)) {
             if ($t -and -not ($transforms -contains $t)) { $transforms.Add([string]$t) | Out-Null }
@@ -452,7 +456,6 @@ function Merge-SolvedConversionsIntoProfile {
         RecommendedPasses = @($passes)
         ApiFeatures       = @($(if ($Profile.PSObject.Properties['ApiFeatures']) { $Profile.ApiFeatures } else { @() }))
         Evidence          = @($(if ($Profile.PSObject.Properties['Evidence']) { $Profile.Evidence } else { @() }))
-        SolvedRules       = @($rules)
         SolvedTransforms  = @($transforms)
         AppliedSolutions  = @($applied.ToArray())
     }
@@ -460,62 +463,6 @@ function Merge-SolvedConversionsIntoProfile {
         $out | Add-Member -NotePropertyName SolvedStopMessage -NotePropertyValue ([string]$stopMessage)
     }
     return $out
-}
-
-function Invoke-Minecraft262WorldgenDataPass {
-    <# Semantic 26.2 worldgen codec migrations proven by CASE-008 Woodlands. #>
-    param([Parameter(Mandatory)][string]$Root)
-
-    $dataRoot = Join-Path $Root 'src\main\resources\data'
-    if (-not (Test-Path -LiteralPath $dataRoot -PathType Container)) { return 0 }
-    $touched = 0
-    foreach ($file in @(Get-ChildItem -LiteralPath $dataRoot -Recurse -File -Filter '*.json' -ErrorAction SilentlyContinue)) {
-        $relative = $file.FullName.Substring($dataRoot.Length).TrimStart('\').Replace('\','/')
-        if ($relative -notmatch '/(?:dimension|worldgen/biome|worldgen/configured_feature)/') { continue }
-        try { $doc = [IO.File]::ReadAllText($file.FullName) | ConvertFrom-Json -ErrorAction Stop }
-        catch { continue }
-        $changed = $false
-
-        if ($relative -match '/worldgen/biome/' -and $doc.PSObject.Properties.Name -contains 'carvers') {
-            $carvers = $doc.carvers
-            if ($carvers -is [pscustomobject] -and @($carvers.PSObject.Properties).Count -eq 0) {
-                $doc.carvers = @()
-                $changed = $true
-            }
-        }
-
-        if ($relative -match '/worldgen/configured_feature/' -and $doc.type -eq 'minecraft:tree' -and $doc.config) {
-            if ($doc.config.PSObject.Properties.Name -notcontains 'below_trunk_provider') {
-                $replacement = if ($doc.config.dirt_provider) { $doc.config.dirt_provider } else {
-                    [pscustomobject][ordered]@{ type='minecraft:simple_state_provider'; state=[pscustomobject][ordered]@{ Name='minecraft:dirt' } }
-                }
-                $provider = [pscustomobject][ordered]@{
-                    type='minecraft:rule_based_state_provider'
-                    rules=@([pscustomobject][ordered]@{
-                        if_true=[pscustomobject][ordered]@{ type='minecraft:not'; predicate=[pscustomobject][ordered]@{ type='minecraft:matching_block_tag'; tag='minecraft:cannot_replace_below_tree_trunk' } }
-                        then=$replacement
-                    })
-                }
-                $doc.config | Add-Member -NotePropertyName below_trunk_provider -NotePropertyValue $provider
-                $changed = $true
-            }
-        }
-
-        if ($relative -match '/dimension/' -and $doc.generator.settings.noise_router) {
-            $router = $doc.generator.settings.noise_router
-            if ($router.PSObject.Properties.Name -notcontains 'preliminary_surface_level') {
-                $router | Add-Member -NotePropertyName preliminary_surface_level -NotePropertyValue 0.0
-                $changed = $true
-            }
-        }
-
-        if ($changed) {
-            $json = $doc | ConvertTo-Json -Depth 100
-            [IO.File]::WriteAllText($file.FullName, $json + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
-            $touched++
-        }
-    }
-    return $touched
 }
 
 function Apply-SolvedConversionOverlays {
@@ -564,20 +511,6 @@ function Apply-SolvedConversionOverlays {
             }
 
             try {
-                # A proven overlay is a final-tree delta. Files removed from the
-                # proven conversion must also be removed from the decompiled base.
-                if ($ov.PSObject.Properties['deletePaths']) {
-                    foreach ($relDelValue in @($ov.deletePaths)) {
-                        $relDel = ([string]$relDelValue).Trim()
-                        if (-not $relDel) { continue }
-                        $target = Join-Path $Root ($relDel -replace '/', [IO.Path]::DirectorySeparatorChar)
-                        if (Test-Path -LiteralPath $target) {
-                            Remove-Item -LiteralPath $target -Force -ErrorAction Stop
-                            $touched++
-                        }
-                    }
-                }
-
                 $deleteList = Join-Path $overlayWork 'DELETE.txt'
                 if (Test-Path -LiteralPath $deleteList) {
                     foreach ($line in @(Get-Content -LiteralPath $deleteList -ErrorAction SilentlyContinue)) {
@@ -621,16 +554,14 @@ function Write-PrimerQuickReference {
     $lines.Add('This is a condensed change index, not a replacement for the linked official primers. Only transitions after the detected source are included.') | Out-Null
     foreach ($step in $chain) {
         $lines.Add('') | Out-Null
-        $lines.Add("## $($step.from) -> $($step.to)") | Out-Null
+        $lines.Add("## $($step.from) â†’ $($step.to)") | Out-Null
         $lines.Add('') | Out-Null
         $sourceLabel = if ($step.sourceType -eq 'official-primer') { "[Official primer]($($step.officialPrimer))" } else { 'Converter-maintained bridge (no official primer published for this interval)' }
         $lines.Add("Source: $sourceLabel") | Out-Null
         foreach ($change in @($step.changes)) { $lines.Add("- $change") | Out-Null }
         if (@($step.passes).Count -gt 0) { $lines.Add("- Converter passes: ``$(@($step.passes) -join '`, `')``") | Out-Null }
     }
-    [IO.File]::WriteAllText($Path, (($lines -join "
-") + "
-"))
+    [IO.File]::WriteAllText($Path, (($lines -join "`r`n") + "`r`n"))
     return $chain.Count
 }
 
@@ -641,8 +572,8 @@ function Get-StationKnowledgeRoot {
         return (Resolve-Path -LiteralPath $Override).Path
     }
     foreach ($candidate in @(
-            $env:RBLOCAL_LLM_KNOWLEDGE,
-            'C:\gokuai\Data'
+            $env:GOKUCODEXAI_DATA,
+            'C:\GokuCodexAI\Data'
         )) {
         if ($candidate -and (Test-Path -LiteralPath $candidate)) {
             return (Resolve-Path -LiteralPath $candidate).Path
@@ -1006,8 +937,7 @@ function Write-MigrationEvidencePacket {
     $jsonPath = Join-Path $OutputDirectory 'MIGRATION_EVIDENCE.json'
     $mdPath = Join-Path $OutputDirectory 'MIGRATION_EVIDENCE.md'
     $json = $packet | ConvertTo-Json -Depth 8
-    [IO.File]::WriteAllText($jsonPath, $json + "
-")
+    [IO.File]::WriteAllText($jsonPath, $json + "`r`n")
 
     $md = New-Object System.Collections.Generic.List[string]
     $md.Add('# Migration evidence packet') | Out-Null
@@ -1051,9 +981,7 @@ function Write-MigrationEvidencePacket {
     }
     $md.Add('') | Out-Null
     $md.Add('Machine-readable twin: `MIGRATION_EVIDENCE.json`.') | Out-Null
-    [IO.File]::WriteAllText($mdPath, (($md -join "
-") + "
-"))
+    [IO.File]::WriteAllText($mdPath, (($md -join "`r`n") + "`r`n"))
 
     return [pscustomobject]@{
         JsonPath     = $jsonPath
@@ -1329,16 +1257,12 @@ function Set-ProjectDestinationJavaHome {
         if ($text -match '(?m)^\s*org\.gradle\.java\.home\s*=') {
             $text = [regex]::Replace($text, '(?m)^\s*org\.gradle\.java\.home\s*=.*$', $line)
         } else {
-            if ($text.Length -gt 0 -and -not $text.EndsWith("`n")) { $text += "
-" }
-            $text += "$line
-"
+            if ($text.Length -gt 0 -and -not $text.EndsWith("`n")) { $text += "`r`n" }
+            $text += "$line`r`n"
         }
         [IO.File]::WriteAllText($propsPath, $text)
     } else {
-        [IO.File]::WriteAllText($propsPath, "# Destination JDK pin (NeoForge toolchain)
-$line
-")
+        [IO.File]::WriteAllText($propsPath, "# Destination JDK pin (NeoForge toolchain)`r`n$line`r`n")
     }
 
     return [pscustomobject]@{
@@ -1375,14 +1299,8 @@ function Invoke-GradleBuildWithRequiredJava {
         $env:PATH = "$javaHome\bin;$oldPath"
         Push-Location $ProjectRoot
         try {
-            cmd /c "gradlew.bat $Tasks --console=plain > `"$LogFileName`" 2>&1"
+            cmd /c "gradlew.bat $Tasks > `"$LogFileName`" 2>&1"
             $exitCode = $LASTEXITCODE
-            if (Test-Path -LiteralPath $logPath) {
-                $logText = [IO.File]::ReadAllText($logPath)
-                $ansiPattern = "$([char]27)\[[0-?]*[ -/]*[@-~]"
-                $logText = [regex]::Replace($logText, $ansiPattern, '')
-                [IO.File]::WriteAllText($logPath, $logText, [Text.UTF8Encoding]::new($false))
-            }
         } finally {
             Pop-Location
         }
@@ -1400,72 +1318,81 @@ function Invoke-GradleBuildWithRequiredJava {
     }
 }
 
-function Get-GrokRepairPromptBody {
+function Get-CodexRepairRequestBody {
     <#
     .SYNOPSIS
-      Canonical Repair-in-Codex / agent repair prompt. Forces destination JDK+Gradle
-      for validation — never ambient/source Java first. Requires minecraft-knowledge MCP.
+      Canonical Codex-native request for repairing a failed conversion output.
     #>
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$FailedOutput,
         [int]$DestinationJavaMajor = 25,
         [string]$TargetMinecraft = '26.2'
     )
     $failed = $FailedOutput.TrimEnd('\', '/')
-    $toolsLib = $PSScriptRoot
     return @"
-You are repairing a failed RMCodexMCConverter -> NeoForge $TargetMinecraft run.
+# LegacyJavaConverter vNext repair request
+
+Codex is the repair orchestrator for this failed LegacyJavaConverter -> NeoForge $TargetMinecraft run.
+KAT and Qwen are optional bounded local workers. Codex reviews and verifies every worker result.
 
 FAILED OUTPUT FOLDER:
 $failed
 
-KNOWLEDGE + MCP (mandatory):
-- Workspace: ``C:\GokuCodexAI\projects\RMCodexMCConverter``
-- Knowledge corpus: ``C:\gokuai\Data``
-- Canonical index: ``C:\gokuai\DataIndex\minecraft-knowledge`` (via ``_ACTIVE_DB.txt``)
-- Once per session call ``minecraft-knowledge__knowledge_status`` (and ``list_knowledge_sources`` if readiness is uncertain).
-- Prefer MCP tools over walking ``C:\gokuai\Data``:
-  - ``minecraft-knowledge__search_knowledge`` / ``search_solved_projects`` (category ``262r``, version ``26.2`` first)
-  - ``minecraft-knowledge__build_migration_evidence(source_version, "$TargetMinecraft", query)``
-  - ``minecraft-knowledge__resolve_primer_chain(source_version, "$TargetMinecraft")``
-  - ``minecraft-knowledge__grep_physical_source`` / ``read_physical_source`` for exact-target API proof
-  - ``minecraft-knowledge__resolve_mapping`` with explicit namespaces
-- Do **not** treat ``goku-data.db`` as the agent retrieval path; it is legacy/benchmark-only.
+NATIVE CODEX WORKSPACE:
+- Read ``AGENTS.md`` before editing.
+- Invoke ``legacy-java-converter-vnext`` from ``.agents/skills``.
+- Use ``repair-failed-262-output`` for this failed output and ``validate-destination-build`` for builds.
+- Use the local ``minecraft-knowledge`` MCP declared in ``.codex/config.toml``.
+- The active AI and knowledge root is ``C:\GokuCodexAI``.
 
+MANDATORY ORDER — deterministic and known-solution stages precede fresh reasoning:
+1. Read ``SOURCE_PROFILE.json``, ``MIGRATION_EVIDENCE.md``, ``conversion-manifest.json``, and ``compile-errors.log`` when present.
+2. Confirm the source Minecraft version, loader/framework, mappings, dependencies, target, and recommended passes.
+3. Complete deterministic conversion stages and consult the persistent Solutions Index, 262r, solved cases, and matching NeoForge 26.2 primer ledger.
+4. Confirm uncertain APIs against exact $TargetMinecraft physical sources and explicit mapping namespaces.
+5. Use the JavaParser AST worker for structural Java edits; use lexical transforms only for proven idempotent replacements.
+6. Audit assets, models, items, entities, AI, and behaviour against the source inventory.
+7. Build with the destination JDK, then report launch, registry/data, content, and runtime behaviour separately.
+8. Delegate only one bounded, evidence-backed issue at a time to an optional local worker, then review its result.
+9. Encode every durable repair into converter logic or an AST recipe, the Solutions Index/262r, and a regression fixture.
 
-MANDATORY ORDER - do this BEFORE inventing any fix or writing Java:
-1. Read project AGENTS.md and the newest SESSION-CONTINUE-*.md under:
-   C:\gokuai\Data\Solved_Problems\legacy-java-converter-26.2
-2. Read these files in the failed output (if present):
-   - $failed\MIGRATION_EVIDENCE.md
-   - $failed\SOURCE_PROFILE.json
-   - $failed\compile-errors.log
-3. Create/update ``$failed\EVIDENCE_PACKET.md`` (template above).
-4. Search **262r first** via MCP (category ``262r``, version ``26.2``) / open one shard under:
-   C:\gokuai\Data\262r\shards
-   then converter notes under ``C:\gokuai\Data\262r\converter``.
-5. From SOURCE_PROFILE / MIGRATION_EVIDENCE, open ONLY the matching primer_changes ledger under:
-   C:\gokuai\Data\NeoForge_Primers\26.2
-   (primer_changes_<source>-to-26.2.md + one shard at a time). Prefer ``build_migration_evidence``. Do NOT dump every full primer.
-6. Search solved cases (CASE-003/004/005, LEARNINGS, DFU/OVY/INT/PKG) via ``search_solved_projects`` or in:
-   C:\gokuai\Data\Solved_Problems\legacy-java-converter-26.2
-7. Confirm APIs against exact NeoForge/Minecraft $TargetMinecraft physical sources (MCP grep/read), then fix.
-8. Prefer encoding durable remaps into tools/Convert-Forge1201-ToNeoForge262.ps1 / SolvedConversionIndex / ``262r`` over one-off patches.
-9. Success = destination-Java ``gradlew build`` producing build/libs/*.jar (not compileJava alone).
+EVIDENCE PACKET:
+- Create or refresh ``$failed\EVIDENCE_PACKET.md`` from ``.agents/skills/repair-failed-262-output/references/evidence-packet-template.md``.
+- Keep excerpts bounded and point to exact evidence paths instead of copying complete logs.
+- Record the deterministic passes and Solutions Index entries already tried.
+- Keep the target pinned to NeoForge $TargetMinecraft; do not retarget this conversion to 26.3.
 
-DESTINATION JAVA / GRADLE (mandatory - do this on EVERY validation build):
-- NeoForge $TargetMinecraft destination JDK major is **$DestinationJavaMajor**. Never probe with ambient/source ``JAVA_HOME`` (often Java 8) first.
-- Before the first ``gradlew`` in this session, pin destination Java:
-  ``powershell -NoProfile -File C:\GokuCodexAI\projects\RMCodexMCConverter\Build-WithDestinationJava.ps1 -ProjectRoot "$failed"``
-- Ensure ``org.gradle.java.home`` in the failed output ``gradle.properties`` points at JDK $DestinationJavaMajor+.
-- Do **not** treat ``Gradle requires JVM 17+ ... configured to use JVM 8`` as a project compile error - wrong JDK; re-run with destination Java immediately.
-- Use the project wrapper (``gradlew.bat``) only.
+KNOWLEDGE ORDER:
+1. Solutions Index and ``C:\GokuCodexAI\Data\262r``.
+2. Solved LegacyJavaConverter 26.2 cases.
+3. Matching source-to-26.2 primer ledger and dependency delta.
+4. Exact NeoForge/Minecraft $TargetMinecraft physical sources and mappings.
+5. Fresh reasoning only for evidence-backed gaps.
 
-Do not invent a permanent client renderer compile-gate when the primer Entity Render State / submit path is unfinished.
+DESTINATION JAVA / GRADLE:
+- Destination JDK major: $DestinationJavaMajor.
+- Before the first Gradle command, run:
+  ``powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\Build-WithDestinationJava.ps1 -ProjectRoot "$failed"``
+- Use the project Gradle wrapper and produce ``build/libs/*.jar``; ``compileJava`` alone is not success.
+- Treat an ambient-Java mismatch as an environment error, not a mod source error.
+
+COMPLETION REPORT:
+- deterministic conversion stages completed;
+- known-solution and AST changes applied;
+- preservation status for assets/data/models/items/entities/AI/behaviour;
+- clean Gradle build and produced jar;
+- runtime launch, registry/data loading, content, and behavioural validation status;
+- remaining manual work;
+- reusable fixes written back to tests and the Solutions Index.
+
+Never describe a clean build alone as a successful conversion.
+Start with the ``legacy-java-converter-vnext`` skill and state the detected source identity and matching 26.2 evidence before editing.
 "@
 }
 
-function Write-GrokRepairPrompt {
+function Write-CodexRepairRequest {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$FailedOutput,
         [int]$DestinationJavaMajor = 25,
@@ -1475,10 +1402,30 @@ function Write-GrokRepairPrompt {
         throw "Failed output missing: $FailedOutput"
     }
     $null = Set-ProjectDestinationJavaHome -ProjectRoot $FailedOutput -FallbackJavaMajor $DestinationJavaMajor -RequiredMajor $DestinationJavaMajor
-    $body = Get-GrokRepairPromptBody -FailedOutput $FailedOutput -DestinationJavaMajor $DestinationJavaMajor -TargetMinecraft $TargetMinecraft
+    $body = Get-CodexRepairRequestBody -FailedOutput $FailedOutput -DestinationJavaMajor $DestinationJavaMajor -TargetMinecraft $TargetMinecraft
     $path = Join-Path $FailedOutput 'CODEX_REPAIR_REQUEST.md'
-    $utf8 = New-Object System.Text.UTF8Encoding $false
-    [IO.File]::WriteAllText($path, $body.TrimEnd() + "
-", $utf8)
+    [IO.File]::WriteAllText($path, $body.TrimEnd() + "`r`n", [Text.UTF8Encoding]::new($false))
     return $path
+}
+
+function Get-GrokRepairPromptBody {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$FailedOutput,
+        [int]$DestinationJavaMajor = 25,
+        [string]$TargetMinecraft = '26.2'
+    )
+    Write-Warning 'Get-GrokRepairPromptBody is deprecated; using Get-CodexRepairRequestBody.'
+    return Get-CodexRepairRequestBody @PSBoundParameters
+}
+
+function Write-GrokRepairPrompt {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$FailedOutput,
+        [int]$DestinationJavaMajor = 25,
+        [string]$TargetMinecraft = '26.2'
+    )
+    Write-Warning 'Write-GrokRepairPrompt is deprecated; using Write-CodexRepairRequest.'
+    return Write-CodexRepairRequest @PSBoundParameters
 }

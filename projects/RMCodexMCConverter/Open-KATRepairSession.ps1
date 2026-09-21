@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$ProjectPath,
     [string]$Root='C:\GokuCodexAI',

@@ -1,0 +1,6 @@
+# One glob-style pattern per line. Keep this empty unless an active compatibility
+# file must contain a forbidden legacy runtime term for a documented reason.
+tests\Run-CodexHandoffTests.ps1:*:Assert-NotContains*GROK_HOME*
+tests\Run-CodexHandoffTests.ps1:*:Assert-True*GROK_HOME*
+tests\Run-CodexHandoffTests.ps1:*:Assert-NotContains*grok.exe*
+scripts\Build-Release.ps1:*:*.Name -ieq 'grok.exe'*

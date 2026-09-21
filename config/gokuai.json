@@ -1,23 +1,39 @@
 {
-  "schema": 2,
-  "asset_root": "C:\\gokuai",
-  "runtime": "C:\\gokuai\\runtime\\llama.cpp\\llama-server.exe",
+  "schema": 3,
+  "root": "C:\\GokuCodexAI",
+  "asset_root": "C:\\GokuCodexAI",
+  "runtime": "C:\\GokuCodexAI\\runtime\\llama.cpp\\llama-server.exe",
   "knowledge": {
-    "root": "C:\\gokuai\\Data",
-    "active_index_pointer": "C:\\gokuai\\DataIndex\\minecraft-knowledge\\_ACTIVE_DB.txt",
-    "hardened_fixes": "C:\\gokuai\\Data\\Solved_Problems",
-    "order": ["hardened_fixes", "compact_version_primers", "exact_version_sources", "broader_index"]
+    "root": "C:\\GokuCodexAI\\Data",
+    "active_index_pointer": "C:\\GokuCodexAI\\DataIndex\\minecraft-knowledge-local\\_ACTIVE_DB.txt",
+    "hardened_fixes": "C:\\GokuCodexAI\\Data\\Solved_Problems",
+    "order": ["solutions_index", "hardened_fixes", "compact_version_primers", "exact_version_sources", "broader_index"]
   },
   "model": {
     "alias": "goku-local",
-    "model": "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
-    "context_size": 65536,
+    "model": "C:\\GokuCodexAI\\models\\kat-reap50-Q6_K.gguf",
+    "context_size": 196608,
     "batch_size": 2048,
     "ubatch_size": 1024
   },
+  "workers": {
+    "default": {
+      "profile": "kat",
+      "model": "C:\\GokuCodexAI\\models\\kat-reap50-Q6_K.gguf",
+      "context_size": 196608,
+      "role": "optional bounded default/repair worker"
+    },
+    "escalation": {
+      "profile": "qwen38",
+      "model": "C:\\GokuCodexAI\\models\\Qwen3.8-27B-Q4_K_M.gguf",
+      "context_size": 32768,
+      "role": "optional bounded local review worker"
+    }
+  },
   "modes": {
-    "fast": {"model_alias": "goku-local", "max_completion_tokens": 1024},
-    "code": {"model_alias": "goku-local", "max_completion_tokens": 8192}
+    "fast": {"profile": "kat", "model_alias": "goku-local", "max_completion_tokens": 1024},
+    "code": {"profile": "kat", "model_alias": "goku-local", "max_completion_tokens": 8192},
+    "review": {"profile": "qwen38", "model_alias": "goku-local", "max_completion_tokens": 8192}
   },
   "inference": {
     "gpu_layers": "all",
@@ -39,9 +55,17 @@
     "ngram_min": 48,
     "ngram_max": 64
   },
-  "escalation": {
-    "default": "gpt-5.6-sol-medium",
-    "difficult": "gpt-5.6-sol-high",
-    "high_when": ["repeated_local_failure", "conflicting_evidence", "multi_version_architecture", "subtle_runtime_bug", "medium_uncertain"]
+  "codex_orchestrator": {
+    "primary": {
+      "label": "Luna High",
+      "model": "gpt-5.6-luna-high",
+      "reasoning_effort": "high"
+    },
+    "fallback": {
+      "label": "Sol Medium",
+      "model": "gpt-5.6-sol-medium",
+      "reasoning_effort": "medium"
+    },
+    "fallback_when": ["hard_issue", "repeated_local_failure", "conflicting_evidence", "multi_version_architecture", "subtle_runtime_bug", "orchestrator_failure"]
   }
 }

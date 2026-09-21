@@ -1,0 +1,86 @@
+﻿{
+    "idle_gpu_used_mib":  1543,
+    "gpu_total_mib":  24564,
+    "rows":  [
+                 {
+                     "context":  98304,
+                     "startup":  "ok",
+                     "startup_seconds":  6.95,
+                     "pid":  26008,
+                     "gpu_used_mib":  17661,
+                     "allocation_over_idle_mib":  16118,
+                     "free_mib":  6903,
+                     "inference":  "ok",
+                     "inference_seconds":  0.32,
+                     "completion_tokens":  21,
+                     "stderr":  "C:\\GokuCodexAI\\benchmarks\\kat-context-capacity-20260920-130730\\kat-ctx-98304.stderr.log"
+                 },
+                 {
+                     "context":  131072,
+                     "startup":  "ok",
+                     "startup_seconds":  6.83,
+                     "pid":  33600,
+                     "gpu_used_mib":  18124,
+                     "allocation_over_idle_mib":  16581,
+                     "free_mib":  6440,
+                     "inference":  "ok",
+                     "inference_seconds":  0.242,
+                     "completion_tokens":  21,
+                     "stderr":  "C:\\GokuCodexAI\\benchmarks\\kat-context-capacity-20260920-130730\\kat-ctx-131072.stderr.log"
+                 },
+                 {
+                     "context":  163840,
+                     "startup":  "ok",
+                     "startup_seconds":  6.84,
+                     "pid":  15132,
+                     "gpu_used_mib":  18592,
+                     "allocation_over_idle_mib":  17049,
+                     "free_mib":  5972,
+                     "inference":  "ok",
+                     "inference_seconds":  0.243,
+                     "completion_tokens":  21,
+                     "stderr":  "C:\\GokuCodexAI\\benchmarks\\kat-context-capacity-20260920-130730\\kat-ctx-163840.stderr.log"
+                 },
+                 {
+                     "context":  196608,
+                     "startup":  "ok",
+                     "startup_seconds":  6.86,
+                     "pid":  19828,
+                     "gpu_used_mib":  19060,
+                     "allocation_over_idle_mib":  17517,
+                     "free_mib":  5504,
+                     "inference":  "ok",
+                     "inference_seconds":  0.289,
+                     "completion_tokens":  21,
+                     "stderr":  "C:\\GokuCodexAI\\benchmarks\\kat-context-capacity-20260920-130730\\kat-ctx-196608.stderr.log"
+                 },
+                 {
+                     "context":  229376,
+                     "startup":  "ok",
+                     "startup_seconds":  6.82,
+                     "pid":  2672,
+                     "gpu_used_mib":  19528,
+                     "allocation_over_idle_mib":  17985,
+                     "free_mib":  5036,
+                     "inference":  "ok",
+                     "inference_seconds":  0.245,
+                     "completion_tokens":  21,
+                     "stderr":  "C:\\GokuCodexAI\\benchmarks\\kat-context-capacity-20260920-130730\\kat-ctx-229376.stderr.log"
+                 },
+                 {
+                     "context":  262144,
+                     "startup":  "ok",
+                     "startup_seconds":  6.87,
+                     "pid":  10192,
+                     "gpu_used_mib":  19996,
+                     "allocation_over_idle_mib":  18453,
+                     "free_mib":  4568,
+                     "inference":  "ok",
+                     "inference_seconds":  0.278,
+                     "completion_tokens":  21,
+                     "stderr":  "C:\\GokuCodexAI\\benchmarks\\kat-context-capacity-20260920-130730\\kat-ctx-262144.stderr.log"
+                 }
+             ],
+    "kat_restored":  true,
+    "completed":  "2026-09-20T13:08:52.9845627+10:00"
+}

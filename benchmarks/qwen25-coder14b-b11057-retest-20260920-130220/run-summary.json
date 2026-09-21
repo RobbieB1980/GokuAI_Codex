@@ -1,0 +1,10 @@
+﻿{
+    "model":  "qwen25-coder-14b-q6kl",
+    "startup":  "ok",
+    "startup_seconds":  8.6,
+    "pid":  9676,
+    "gpu_used_mib":  16613,
+    "report":  "C:\\GokuCodexAI\\benchmarks\\qwen25-coder14b-b11057-retest-20260920-130220\\qwen25-coder-14b-q6kl.stage3.json",
+    "benchmark_exit":  0,
+    "elapsed_seconds":  123.75
+}

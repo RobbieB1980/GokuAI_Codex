@@ -1,4 +1,15 @@
-﻿## 2.10.13 — 2026-09-06
+﻿## 3.0.0 — 2026-09-21
+
+vNext foundation and native GokuCodexAI failure handoff:
+
+- Adds the shared `legacy-java-converter-vnext` orchestration skill for NeoForge 26.2 conversion fidelity, known-solution-first repair, AST routing, and separate build/runtime validation.
+- **Repair with GokuCodexAI** opens native Codex as orchestrator after deterministic and known-solution stages are exhausted.
+- Replaces active Grok runtime/configuration dependencies with `AGENTS.md`, `.agents/skills`, `.codex/config.toml`, `CODEX_REPAIR_REQUEST.md`, and the local Minecraft knowledge MCP under `C:\GokuCodexAI`.
+- KAT/Qwen remain optional bounded local workers; Codex reviews their results and owns integration and validation.
+- Portable and installer releases ship the complete repair bundle and fail closed when required handoff components are missing.
+- Adds isolated handoff tests for stale workspace replacement, paths with spaces/apostrophes, skill ordering, request generation, incomplete bundles, and active legacy dependencies.
+
+## 2.10.13 — 2026-09-06
 
 Catch-up release after GokuAI-only indexer + workspace launcher polish:
 

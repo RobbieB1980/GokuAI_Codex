@@ -1,0 +1,84 @@
+﻿{
+    "SchemaVersion":  1,
+    "SourceVersion":  "1.21.4",
+    "Loader":  "neoforge",
+    "Framework":  "mcreator",
+    "Confidence":  "high",
+    "Route":  "neoforge-1.21.x",
+    "RecommendedPasses":  [
+                              "mechanical-java",
+                              "neoforge-26-api",
+                              "config-order",
+                              "registry",
+                              "block-item-id",
+                              "geckolib",
+                              "mod-entry",
+                              "event-bus",
+                              "assets",
+                              "mcreator-1.21.x"
+                          ],
+    "ApiFeatures":  [
+                        {
+                            "Id":  "mcreator-source",
+                            "Pass":  "mcreator-1.21.x",
+                            "Description":  "MCreator-generated source",
+                            "ExampleFile":  "src\\main\\java\\net\\mcreator\\melscosmetics\\MelsDecoMod.java"
+                        },
+                        {
+                            "Id":  "resource-location",
+                            "Pass":  "mechanical-java",
+                            "Description":  "ResourceLocation API renamed for 26.x",
+                            "ExampleFile":  "src\\main\\java\\net\\mcreator\\melscosmetics\\block\\CrispsBlueBlock.java"
+                        },
+                        {
+                            "Id":  "legacy-gui-graphics",
+                            "Pass":  "mcreator-1.21.x",
+                            "Description":  "Pre-26.2 GUI rendering API",
+                            "ExampleFile":  "src\\main\\java\\net\\mcreator\\melscosmetics\\client\\gui\\BasketsGUIScreen.java"
+                        },
+                        {
+                            "Id":  "deferred-register",
+                            "Pass":  "registry",
+                            "Description":  "Deferred registry API",
+                            "ExampleFile":  "src\\main\\java\\net\\mcreator\\melscosmetics\\init\\MelsDecoModBlockEntities.java"
+                        },
+                        {
+                            "Id":  "legacy-capability",
+                            "Pass":  "neoforge-26-api",
+                            "Description":  "Legacy capability/item handler API",
+                            "ExampleFile":  "src\\main\\java\\net\\mcreator\\melscosmetics\\init\\MelsDecoModBlockEntities.java"
+                        }
+                    ],
+    "Evidence":  [
+                     {
+                         "Source":  "preserved source profile",
+                         "Value":  "1.21.4",
+                         "Detail":  "SOURCE_PROFILE.json"
+                     },
+                     {
+                         "Source":  "gradle.properties",
+                         "Value":  "1.21.4",
+                         "Detail":  "gradle.properties"
+                     },
+                     {
+                         "Source":  "mod metadata",
+                         "Value":  "1.21.4",
+                         "Detail":  "neoforge.mods.toml"
+                     }
+                 ],
+    "SolvedTransforms":  [
+                             "custom-block-registration",
+                             "client-package-moves",
+                             "cutout-render-type"
+                         ],
+    "AppliedSolutions":  [
+                             {
+                                 "Id":  "CASE-003-mels-deco-1.21.4",
+                                 "Notes":  "Full gradlew build on Neo 26.2.0.72. Unused Legacy262Compat removed from jar (no call sites). JPMS-001: never ship shared rb.legacy.converter.compat."
+                             },
+                             {
+                                 "Id":  "BAND-neoforge-1.21.4",
+                                 "Notes":  ""
+                             }
+                         ]
+}

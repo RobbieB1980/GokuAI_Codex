@@ -1,7 +1,7 @@
-﻿[
+[
     {
         "profile":  "kat-recipe",
-        "model":  "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
+        "model":  "C:\\GokuCodexAI\\models\\kat-reap50-Q6_K.gguf",
         "case":  "code-repair",
         "status":  "ok",
         "load_seconds":  14.62,
@@ -14,7 +14,7 @@
     },
     {
         "profile":  "kat-recipe",
-        "model":  "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
+        "model":  "C:\\GokuCodexAI\\models\\kat-reap50-Q6_K.gguf",
         "case":  "version-grounding",
         "status":  "ok",
         "load_seconds":  14.62,
@@ -27,7 +27,7 @@
     },
     {
         "profile":  "kat-recipe",
-        "model":  "C:\\gokuai\\models\\kat-reap50-Q6_K.gguf",
+        "model":  "C:\\GokuCodexAI\\models\\kat-reap50-Q6_K.gguf",
         "case":  "uncertainty",
         "status":  "ok",
         "load_seconds":  14.62,

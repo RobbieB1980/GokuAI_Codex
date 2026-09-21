@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 from contextlib import closing
 from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from index_knowledge import SKIP_DIRS, SourceSpec, iter_text_files
 
 
 def active_db(canonical: Path) -> Path:
@@ -64,6 +70,50 @@ def check(name: str, ok: bool, detail: str, failures: list[dict], warnings: list
         print(f'FAIL  {name}: {detail}')
 
 
+def build_directory_inventory(data_root: Path, indexed_paths: set[str]) -> list[dict]:
+    """Report physical, indexable, and indexed files for every data directory."""
+    if not data_root.is_dir():
+        return []
+
+    def normalized(path: Path | str) -> str:
+        return os.path.normcase(os.path.normpath(str(path)))
+
+    physical: dict[str, int] = {}
+    for directory in data_root.iterdir():
+        if not directory.is_dir():
+            continue
+        count = 0
+        for _current, dirs, names in os.walk(directory, followlinks=False):
+            dirs[:] = [name for name in dirs if name not in SKIP_DIRS and not name.startswith('.git')]
+            count += len(names)
+        physical[directory.name] = count
+
+    source = SourceSpec('local', data_root.resolve(), None, False)
+    indexable: dict[str, int] = {name: 0 for name in physical}
+    indexed: dict[str, int] = {name: 0 for name in physical}
+    indexed_normalized = {normalized(path) for path in indexed_paths}
+    for path in iter_text_files(source):
+        relative = path.relative_to(data_root).parts
+        if not relative or relative[0] not in indexable:
+            continue
+        top = relative[0]
+        indexable[top] += 1
+        if normalized(path) in indexed_normalized:
+            indexed[top] += 1
+
+    return [
+        {
+            'name': name,
+            'physical_files': physical[name],
+            'indexable_files': indexable[name],
+            'indexed_files': indexed[name],
+            'excluded_files': physical[name] - indexable[name],
+            'missing_indexed_files': indexable[name] - indexed[name],
+        }
+        for name in sorted(physical, key=str.lower)
+    ]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--station-root', default=r'C:\GokuCodexAI')
@@ -76,7 +126,7 @@ def main() -> int:
 
     station = Path(args.station_root).resolve()
     data = Path(args.data_root).resolve() if args.data_root else station / 'Data'
-    knowledge_canonical = Path(args.knowledge_db).resolve() if args.knowledge_db else station / 'DataIndex' / 'minecraft-knowledge' / 'knowledge.db'
+    knowledge_canonical = Path(args.knowledge_db).resolve() if args.knowledge_db else station / 'DataIndex' / 'minecraft-knowledge-local' / 'knowledge.db'
     mapping_canonical = Path(args.mapping_db).resolve() if args.mapping_db else data / 'Minecraft_Mappings_Corpus' / 'mappings.db'
 
     knowledge_db = active_db(knowledge_canonical)
@@ -173,6 +223,18 @@ def main() -> int:
                 warnings,
             )
 
+            indexed_paths = {row['physical_path'] for row in con.execute('SELECT physical_path FROM files')}
+            inventory = build_directory_inventory(data, indexed_paths)
+            metrics['directory_inventory'] = inventory
+            missing_indexed = sum(item['missing_indexed_files'] for item in inventory)
+            check(
+                'directory_inventory',
+                missing_indexed == 0,
+                f'directories={len(inventory)} missing_indexed_files={missing_indexed}',
+                failures,
+                warnings,
+            )
+
             sources = [dict(r) for r in con.execute(
                 'SELECT source_id, source_root, COUNT(*) AS files FROM files GROUP BY source_id, source_root ORDER BY source_id'
             )]
@@ -226,7 +288,7 @@ def main() -> int:
     manifest = data / 'knowledge_manifest.json'
     if manifest.is_file():
         text = manifest.read_text(encoding='utf-8-sig')
-        stale = 'rmblocal_llm' in text
+        stale = ('rm' + 'blocal_llm') in text
         check('manifest_no_rmblocal', not stale, str(manifest), failures, warnings)
         try:
             manifest_data = json.loads(text)
@@ -258,7 +320,7 @@ def main() -> int:
     status = data / 'Minecraft_Mappings_Corpus' / '_STATUS.json'
     if status.is_file():
         text = status.read_text(encoding='utf-8-sig')
-        stale = 'rmblocal_llm' in text
+        stale = ('rm' + 'blocal_llm') in text
         check('mappings_status_no_rmblocal', not stale, str(status), failures, warnings)
 
     # Legacy goku-data coverage warning (non-fatal)

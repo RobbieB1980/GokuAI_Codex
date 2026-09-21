@@ -1,0 +1,30 @@
+﻿{
+    "SchemaVersion":  1,
+    "SourceVersion":  "1.21.1",
+    "Loader":  "neoforge",
+    "Framework":  "unknown",
+    "Confidence":  "high",
+    "Route":  "neoforge-1.21.x",
+    "RecommendedPasses":  [
+                              "mechanical-java",
+                              "neoforge-26-api",
+                              "config-order",
+                              "registry",
+                              "block-item-id",
+                              "geckolib",
+                              "mod-entry",
+                              "event-bus",
+                              "assets",
+                              "mcreator-1.21.x"
+                          ],
+    "ApiFeatures":  [
+
+                    ],
+    "Evidence":  [
+                     {
+                         "Source":  "mod metadata",
+                         "Value":  "1.21.1",
+                         "Detail":  "neoforge.mods.toml"
+                     }
+                 ]
+}

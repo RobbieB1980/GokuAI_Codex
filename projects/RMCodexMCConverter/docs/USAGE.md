@@ -19,6 +19,20 @@
 # Failure preserves the scaffold and writes compile-errors.log and COMPILE_REPORT.md.
 ```
 
+If the conversion cannot complete, click **Repair with GokuCodexAI** in the
+GUI or run:
+
+```powershell
+.\Open-CodexRepairSession.ps1 -FailedOutput "C:\mods\mymod-26.2"
+```
+
+The launcher writes `CODEX_REPAIR_REQUEST.md`, installs native Codex guidance
+and skills into the failed output, configures the local Minecraft knowledge
+MCP from `C:\GokuCodexAI`, and opens Codex as the repair orchestrator. The
+NeoForge target remains 26.2. Luna High (`gpt-5.6-luna-high`) is the primary
+route; hard issues and failures fall back to Sol Medium
+(`gpt-5.6-sol-medium`). Local KAT/Qwen workers are optional.
+
 ## Finished NeoForge 1.21.x jar → 26.2 scaffold
 
 ```powershell
@@ -42,7 +56,7 @@ cd "C:\mods\the_knocker-26.2"
 .\Convert-Forge1201-ToNeoForge262.ps1 `
   -Path "C:\mods\legacy\mymod" `
   -OutputPath "C:\mods\mymod-26.2" `
-  -NeoVersion "26.2.0.66" `
+  -NeoVersion "26.2.0.72" `
   -ModDevGradleVersion "2.0.144"
 ```
 

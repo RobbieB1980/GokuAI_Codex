@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Decompile a finished Minecraft mod .jar into a source project folder.
 
@@ -355,7 +355,7 @@ try {
         "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
         ""
         "This folder was produced by Convert-JarToProject.ps1 (Vineflower)."
-        "It is NOT original source code. Use RMCodexMCConverter for NeoForge 26.2 scaffolding."
+        "It is NOT original source code. Use RB Legacy Java Converter for NeoForge 26.2 scaffolding."
         ""
         "## Next step"
         ""

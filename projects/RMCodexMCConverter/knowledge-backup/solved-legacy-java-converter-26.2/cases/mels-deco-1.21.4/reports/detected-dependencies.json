@@ -1,0 +1,14 @@
+﻿[
+    {
+        "ModId":  "minecraft",
+        "Required":  true,
+        "VersionRange":  "[1.21.4]",
+        "Source":  "toml"
+    },
+    {
+        "ModId":  "neoforge",
+        "Required":  true,
+        "VersionRange":  "[21.4.155,)",
+        "Source":  "toml"
+    }
+]

@@ -1,10 +1,14 @@
-# RMCodexMCConverter
+# Legacy Java Converter
 
-**Current release: v2.0.2**
+**vNext development baseline: 3.0.0 (NeoForge 26.2)**
 
 Windows GUI and PowerShell migration assistant for **Forge/NeoForge 1.20.1 through 26.1** → **NeoForge 26.2** ModDevGradle projects.
 
-The converter detects the source version and API features, decompiles finished JARs, migrates known Java/resource patterns, resolves dependencies, generates the 26.2 project and optionally runs a complete Gradle build. Project-specific code can still require manual repair. The rewrite stack was proven on:
+The converter detects the source version and API features, decompiles finished JARs, migrates known Java/resource patterns, resolves dependencies, generates the 26.2 project and optionally runs a complete Gradle build. Project-specific code can still require manual repair.
+
+The vNext foundation adds a versioned conversion-manifest contract, reproducible release contents, golden transformation fixtures, and a JavaParser analysis worker. The AST worker currently runs at the analysis/shadow-comparison boundary only; production conversion still uses the proven deterministic PowerShell passes. See [docs/VNEXT-STATUS.md](docs/VNEXT-STATUS.md) for the exact boundary, validation stages, and reproducible commands.
+
+The rewrite stack was proven on:
 
 - **Friend** — compile, world creation, in-game entity spawn
 - **The Knocker** — NeoForge 1.21.8 jar → 26.2 compile + in-game spawn
@@ -36,13 +40,22 @@ Outputs land in `dist\`. See [CHANGELOG.md](CHANGELOG.md) for version history.
 ## GUI app
 
 1. Install via Setup.exe **or** extract the portable zip.
-2. Run **RMCodexMCConverter**.
+2. Run **RB Legacy Java Converter**.
 3. Choose a mode:
    - **Mode A — Project folder:** Forge 1.20.1 (or decompiled) source with `src/`
    - **Mode B — Finished `.jar`:** Vineflower decompile → optional NeoForge 26.2 scaffold
 4. Choose **Input** and empty **Output** folder.
 5. Optionally enable **Compile after convert** to run the full Gradle build and produce the versioned JAR (needs JDK 25; jar mode also needs Java 17+ for Vineflower).
 6. Click **Convert** / **Jar → 26.2**. Original input is never modified.
+7. If deterministic conversion cannot finish, choose **Repair with GokuCodexAI**. Codex opens in the failed output with the vNext skill, Solutions Index, exact 26.2 knowledge, conversion evidence, and destination-Java tools already configured.
+
+The repair path uses `C:\GokuCodexAI` and native Codex configuration. It has no
+runtime dependency on Grok software, accounts, services, or authentication.
+KAT/Qwen may be used as optional local workers, while Codex remains responsible
+for orchestration, integration, and verification.
+
+A clean Gradle build and an installable jar are reported separately from game
+launch, registry/data loading, content, and behavioural validation.
 
 See [docs/JAR-PIPELINE.md](docs/JAR-PIPELINE.md) for the jar workflow.
 
@@ -84,7 +97,7 @@ The converter now auto-detects the source loader/version and inventories legacy 
 | `-OutputPath` | Empty output folder (required) |
 | `-Compile` | Run the complete `gradlew build`; success requires an installable JAR in `build/libs` |
 | `-DryRun` | Preview only — no files written |
-| `-NeoVersion` | Default `26.2.0.66` |
+| `-NeoVersion` | Default `26.2.0.72` |
 | `-GeckoLibVersion` | Default `5.5.3` |
 
 After conversion:

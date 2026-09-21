@@ -1,0 +1,38 @@
+﻿[
+    {
+        "model":  "huihui-qwen38-27b-abliterated-q4km",
+        "startup":  "ok",
+        "startup_seconds":  12.59,
+        "pid":  25940,
+        "report":  "C:\\GokuCodexAI\\benchmarks\\gguf-b11057-retest-20260920-112219\\huihui-qwen38-27b-abliterated-q4km.stage3.json",
+        "benchmark_exit":  0,
+        "elapsed_seconds":  605.84
+    },
+    {
+        "model":  "qwen3-coder-30b-a3b-q4_0",
+        "startup":  "ok",
+        "startup_seconds":  12.58,
+        "pid":  10164,
+        "report":  "C:\\GokuCodexAI\\benchmarks\\gguf-b11057-retest-20260920-112219\\qwen3-coder-30b-a3b-q4_0.stage3.json",
+        "benchmark_exit":  0,
+        "elapsed_seconds":  63.86
+    },
+    {
+        "model":  "kat-reap50-q6k",
+        "startup":  "ok",
+        "startup_seconds":  6.54,
+        "pid":  18328,
+        "report":  "C:\\GokuCodexAI\\benchmarks\\gguf-b11057-retest-20260920-112219\\kat-reap50-q6k.stage3.json",
+        "benchmark_exit":  0,
+        "elapsed_seconds":  143.97
+    },
+    {
+        "model":  "qwen38-27b-q4km",
+        "startup":  "ok",
+        "startup_seconds":  8.54,
+        "pid":  33872,
+        "report":  "C:\\GokuCodexAI\\benchmarks\\gguf-b11057-retest-20260920-112219\\qwen38-27b-q4km.stage3.json",
+        "benchmark_exit":  0,
+        "elapsed_seconds":  610.04
+    }
+]

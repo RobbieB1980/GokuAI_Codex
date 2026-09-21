@@ -45,6 +45,31 @@ Routes control which rewrite functions run. Feature evidence can add a required 
 8. Optional `compileJava`
 9. `COMPILE_REPORT.md`, `COMPILE_REPORT.json`, and full `compile-errors.log`
 
+## vNext foundation boundary
+
+The vNext foundation introduces two additional, deliberately separated layers:
+
+1. `lib/ConversionManifest.ps1` records deterministic input files, hashes, selected rules, and ordered validation results in a stable machine-readable contract.
+2. `tools/ast-worker` uses JavaParser 3.28.2 with symbol solving to analyze Java sources through a versioned JSON protocol. `lib/AstWorkerBridge.ps1` invokes it without placing source or dependency paths in a shell command and can compare its type/import inventory with the legacy source scan.
+
+AST operation is currently **shadow-only**. It reports parsed files, per-file parse failures, declared types, imports, diagnostics, and inventory differences. It does not yet edit Java files or replace the deterministic PowerShell migration passes. Parse failures are preserved for later known-solution or bounded-repair handling; they do not trigger broad replacement.
+
+The worker and Windows release both target the NeoForge 26.2 toolchain and resolve JDK 25 explicitly. The portable release includes the worker runtime and its Java dependencies under `tools/lib/ast-worker`.
+
+## Validation stages
+
+Completion is reported as a ladder, never as one success flag:
+
+1. Input profiling and deterministic planning completed.
+2. Deterministic conversion completed.
+3. Destination Java parsed successfully, with parse failures reported separately.
+4. The converted project completed `gradlew build` and produced an installable JAR.
+5. NeoForge booted with that JAR.
+6. A world loaded without registry, datapack, or resource errors.
+7. Representative content and behavior checks passed.
+
+Building this converter or its portable package validates the converter distribution only. It does not establish stages 4-7 for any converted mod. See `docs/VNEXT-STATUS.md` for the current foundation evidence and validation commands.
+
 ## Important boundary
 
 This is a deterministic migration assistant, not a universal semantic Java translator. It can identify and rewrite known API patterns. Complex mixins, networking, custom render pipelines, capabilities/transfer code, world generation, and decompiler damage may still require targeted rules or manual work. A green `compileJava`, `build`, and `runClient` test remain the completion criteria for each converted mod.

@@ -1,0 +1,6 @@
+﻿Original jar: C:\Users\rmbel\Downloads\1.21.4 Mel's DeCo v1.2.jar
+Decompiled:   C:\Users\rmbel\Downloads\1.21.4 Mel's DeCo v1.2-decompiled
+26.2 project: C:\Users\rmbel\Downloads\1.21.4 Mel's DeCo v1.2-26.2
+Installed:    %APPDATA%\.minecraft\versions\neoforge-26.2.0.72\mods\mels_deco-1.2+mc26.2-neoforge.jar
+Converter:    2.0.2
+Status:       build + in-game verified 2026-08-30 (with NextGen Furniture)

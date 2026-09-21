@@ -6,6 +6,10 @@ state/
 
 
 /artifacts/
+/Data/
+/DataIndex/
+/models/
+/runtime/
 projects/**/bin/
 projects/**/obj/
 projects/**/dist/

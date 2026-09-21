@@ -1,0 +1,12 @@
+approval_policy = "on-request"
+model = "gpt-5.6-luna-high"
+model_reasoning_effort = "high"
+model_reasoning_summary = "auto"
+
+[mcp_servers.minecraft-knowledge]
+command = "__GOKU_PYTHON__"
+args = ["__KNOWLEDGE_MCP__", "--db", "__KNOWLEDGE_DB__", "--root", "__KNOWLEDGE_ROOT__"]
+cwd = "__GOKU_ROOT__"
+required = true
+startup_timeout_sec = 60
+tool_timeout_sec = 120

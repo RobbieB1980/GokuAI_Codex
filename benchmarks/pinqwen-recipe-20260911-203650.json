@@ -1,7 +1,7 @@
-﻿[
+[
     {
         "profile":  "pinqwen-recipe",
-        "model":  "C:\\gokuai\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
+        "model":  "C:\\GokuCodexAI\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
         "case":  "code-repair",
         "status":  "ok",
         "load_seconds":  8.59,
@@ -14,7 +14,7 @@
     },
     {
         "profile":  "pinqwen-recipe",
-        "model":  "C:\\gokuai\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
+        "model":  "C:\\GokuCodexAI\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
         "case":  "version-grounding",
         "status":  "ok",
         "load_seconds":  8.59,
@@ -27,7 +27,7 @@
     },
     {
         "profile":  "pinqwen-recipe",
-        "model":  "C:\\gokuai\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
+        "model":  "C:\\GokuCodexAI\\models\\PINQWEN-3.5-9B-Q8_0.gguf",
         "case":  "uncertainty",
         "status":  "ok",
         "load_seconds":  8.59,

@@ -1,0 +1,235 @@
+﻿{
+    "schemaVersion":  1,
+    "title":  "Legacy Java Converter - NeoForge 26.2 solved cases",
+    "toolsRoot":  "C:\\rmblocal_llm\\projects\\RB-Legacy-Java-Converter\\tools",
+    "playbook":  "C:\\rmblocal_llm\\knowledge\\NeoForge_Primers\\AGENT-LEGACY-CONVERTER-26.2.md",
+    "cases":  [
+                  {
+                      "id":  "CASE-001",
+                      "tags":  [
+                                   "nextgen_furniture",
+                                   "1.21.1",
+                                   "success",
+                                   "build/libs",
+                                   "reference"
+                               ],
+                      "file":  "CASE-001-nextgen-furniture-1.21.1-success.md",
+                      "projectArchive":  "C:\\rmblocal_llm\\projects\\NextgenFurniture-1.21.1-to-26.2-SUCCESS",
+                      "artifacts":  "cases/nextgen-furniture-1.21.1/"
+                  },
+                  {
+                      "id":  "CASE-002",
+                      "tags":  [
+                                   "Friend",
+                                   "TOWW",
+                                   "Knocker",
+                                   "MOAdecor",
+                                   "Hospital",
+                                   "1.20.1",
+                                   "1.21.8",
+                                   "1.12.2",
+                                   "26.1.2",
+                                   "GrokBuild",
+                                   "Completed_JARS"
+                               ],
+                      "file":  "CASE-002-grokbuild-completed-26.2-index.md",
+                      "canonicalRoot":  "F:\\rob_projects\\Completed\\GrokBuild_MF\\Completed_Projects\\Java\\26.2",
+                      "artifacts":  "cases/grokbuild-completed-26.2/"
+                  },
+                  {
+                      "id":  "REG-001",
+                      "tags":  [
+                                   "registry",
+                                   "Block id not set",
+                                   "Supplier",
+                                   "registerBlock",
+                                   "Nextgen"
+                               ],
+                      "file":  "REG-001-block-id-not-set-supplier-registerBlock.md"
+                  },
+                  {
+                      "id":  "DEP-001",
+                      "tags":  [
+                                   "fusion",
+                                   "dependency",
+                                   "supermartijn",
+                                   "connected-textures"
+                               ],
+                      "file":  "DEP-001-fusion-supermartijn-official.md"
+                  },
+                  {
+                      "id":  "REN-001",
+                      "tags":  [
+                                   "nextgen_furniture",
+                                   "overlay",
+                                   "1.21.1",
+                                   "BER",
+                                   "standalone"
+                               ],
+                      "file":  "REN-001-nextgen-furniture-1.21.1-overlay.md"
+                  },
+                  {
+                      "id":  "REN-002",
+                      "tags":  [
+                                   "BlockStateModel",
+                                   "CameraRenderState",
+                                   "VariantMutator",
+                                   "package move"
+                               ],
+                      "file":  "REN-002-client-package-moves-26.2.md"
+                  },
+                  {
+                      "id":  "REN-003",
+                      "tags":  [
+                                   "ItemBlockRenderTypes",
+                                   "cutout",
+                                   "render_type"
+                               ],
+                      "file":  "REN-003-itemblockrendertypes-to-model-render-type.md"
+                  },
+                  {
+                      "id":  "DET-001",
+                      "tags":  [
+                                   "SOURCE_PROFILE",
+                                   "PrimerChangeIndex",
+                                   "detection",
+                                   "primer rules"
+                               ],
+                      "file":  "DET-001-source-profile-and-primer-rules.md"
+                  },
+                  {
+                      "id":  "PKG-001",
+                      "tags":  [
+                                   "installer",
+                                   "embedded payload",
+                                   "portable zip"
+                               ],
+                      "file":  "PKG-001-installer-embedded-payload-only.md"
+                  },
+                  {
+                      "id":  "CASE-003",
+                      "tags":  [
+                                   "mels_deco",
+                                   "1.21.4",
+                                   "success",
+                                   "build/libs",
+                                   "MCreator",
+                                   "reference"
+                               ],
+                      "file":  "CASE-003-mels-deco-1.21.4-success.md",
+                      "artifacts":  "cases/mels-deco-1.21.4/"
+                  },
+                  {
+                      "id":  "REN-004",
+                      "tags":  [
+                                   "mels_deco",
+                                   "1.21.4",
+                                   "ExactPrimer",
+                                   "ArmorItem",
+                                   "SingleQuadParticle",
+                                   "GUI",
+                                   "CHAINSAW"
+                               ],
+                      "file":  "REN-004-mels-deco-1.21.4-mechanical-rules.md"
+                  },
+                  {
+                      "id":  "DET-002",
+                      "tags":  [
+                                   "primer",
+                                   "strictly-after",
+                                   "Get-PrimerMigrationChain"
+                               ],
+                      "file":  "DET-002-primer-strictly-after-source.md"
+                  },
+                  {
+                      "id":  "JPMS-001",
+                      "tags":  [
+                                   "JPMS",
+                                   "split-package",
+                                   "Legacy262Compat",
+                                   "ResolutionException",
+                                   "mels_deco",
+                                   "nextgen_furniture"
+                               ],
+                      "file":  "JPMS-001-legacy262compat-mod-scoped-package.md"
+                  },
+                  {
+                      "tags":  [
+                                   "medsystem",
+                                   "1.21.1",
+                                   "success",
+                                   "DFU",
+                                   "overlay",
+                                   "2.0.4"
+                               ],
+                      "id":  "CASE-004",
+                      "artifacts":  "cases/medsystem-1.21.1/",
+                      "file":  "CASE-004-medsystem-1.21.1.md"
+                  },
+                  {
+                      "tags":  [
+                                   "gecko_kings_avp_mod",
+                                   "1.21.1",
+                                   "MCreator",
+                                   "compile-green",
+                                   "client-render-gate",
+                                   "2.10.0"
+                               ],
+                      "id":  "CASE-005",
+                      "artifacts":  "cases/gecko-kings-1.21.1/",
+                      "file":  "CASE-005-gecko-kings-1.21.1.md"
+                  },
+                  {
+                      "tags":  [
+                                   "2.0.x",
+                                   "handwritten",
+                                   "MCreator",
+                                   "decision-tree"
+                               ],
+                      "id":  "LEARNINGS-2.0",
+                      "file":  "LEARNINGS-2.0.x-handwritten-neoforge.md"
+                  },
+                  {
+                      "tags":  [
+                                   "RecordCodecBuilder",
+                                   "validate",
+                                   "mixin",
+                                   "Vineflower",
+                                   "DFU"
+                               ],
+                      "id":  "DFU-001",
+                      "file":  "DFU-001-recordcodecbuilder-validate-mixin.md"
+                  },
+                  {
+                      "tags":  [
+                                   "overlay",
+                                   "DELETE.txt",
+                                   "green",
+                                   "oracle"
+                               ],
+                      "id":  "OVY-001",
+                      "file":  "OVY-001-overlay-must-be-green-not-oracle.md"
+                  },
+                  {
+                      "tags":  [
+                                   "CarryOn",
+                                   "Sable",
+                                   "soft-dep",
+                                   "integration"
+                               ],
+                      "id":  "INT-001",
+                      "file":  "INT-001-soft-dep-integration-exclude.md"
+                  },
+                  {
+                      "tags":  [
+                                   "release",
+                                   "version",
+                                   "GUI",
+                                   "1.5.5",
+                                   "2.0.4"
+                               ],
+                      "id":  "PKG-002",
+                      "file":  "PKG-002-release-version-bump-checklist.md"
+                  }
+              ]
+}

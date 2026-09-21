@@ -1,0 +1,38 @@
+{
+  "id": "262r",
+  "title": "NeoForge 26.2 compile/runtime repair knowledge",
+  "category": "262r",
+  "version": "26.2",
+  "exported": "2026-09-05",
+  "converter_version": "2.10.8+",
+  "converter_pass": "Invoke-Minecraft262CompileRepairPass",
+  "related_passes": [
+    "Invoke-Minecraft262CustomGameRuleDeferredRegister",
+    "Invoke-BlockItemIdPass",
+    "Invoke-ForgeConventionTagRewritePass",
+    "Invoke-Minecraft262ItemModelPass",
+    "Resolve-AndAcquireDependencies",
+    "Invoke-OptionalIntegrationExcludePass"
+  ],
+  "converter_source": "C:\\gokuai\\projects\\RB-Legacy-Java-Converter\\tools\\Convert-Forge1201-ToNeoForge262.ps1",
+  "pipeline_source": "C:\\gokuai\\projects\\RB-Legacy-Java-Converter\\tools\\lib\\ModDependencyPipeline.ps1",
+  "layout": {
+    "converter": "converter/",
+    "shards": "shards/",
+    "catalog": "catalog.json"
+  },
+  "proven_on": [
+    "CASE-005 gecko_kings_avp_mod NeoForge 1.21.1 → 26.2",
+    "CASE-006 easy_mob_farm NeoForge 1.21.4 → 26.2 (compile-green 2026-09-05)"
+  ],
+  "play_instance": "NeoForge 26.2.0.72",
+  "agent_search_order": [
+    "failed-output packet",
+    "262r converter/ + shards/",
+    "solved cases",
+    "primer_changes",
+    "exact 26.2 physical source",
+    "invent + write back"
+  ],
+  "note": "Canonical retrieval tree for 262-repair and converter pipeline remaps. Executable remaps stay in the converter; this directory is indexed knowledge for agents."
+}

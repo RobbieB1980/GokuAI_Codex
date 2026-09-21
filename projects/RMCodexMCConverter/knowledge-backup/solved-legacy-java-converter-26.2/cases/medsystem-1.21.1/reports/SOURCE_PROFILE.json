@@ -1,0 +1,74 @@
+﻿{
+    "SchemaVersion":  1,
+    "SourceVersion":  "1.21.1",
+    "Loader":  "neoforge",
+    "Framework":  "unknown",
+    "Confidence":  "high",
+    "Route":  "neoforge-1.21.x",
+    "RecommendedPasses":  [
+                              "mechanical-java",
+                              "neoforge-26-api",
+                              "config-order",
+                              "registry",
+                              "block-item-id",
+                              "geckolib",
+                              "mod-entry",
+                              "event-bus",
+                              "assets",
+                              "mcreator-1.21.x"
+                          ],
+    "ApiFeatures":  [
+                        {
+                            "Id":  "resource-location",
+                            "Pass":  "mechanical-java",
+                            "Description":  "ResourceLocation API renamed for 26.x",
+                            "ExampleFile":  "src\\main\\java\\tnt\\tarkovcraft\\medsystem\\MedicalSystem.java"
+                        },
+                        {
+                            "Id":  "legacy-gui-graphics",
+                            "Pass":  "mcreator-1.21.x",
+                            "Description":  "Pre-26.2 GUI rendering API",
+                            "ExampleFile":  "src\\main\\java\\tnt\\tarkovcraft\\medsystem\\client\\overlay\\HealthLayer.java"
+                        },
+                        {
+                            "Id":  "deferred-register",
+                            "Pass":  "registry",
+                            "Description":  "Deferred registry API",
+                            "ExampleFile":  "src\\main\\java\\tnt\\tarkovcraft\\medsystem\\common\\init\\MedSystemArgumentTypes.java"
+                        },
+                        {
+                            "Id":  "display-client-message",
+                            "Pass":  "neoforge-26-api",
+                            "Description":  "Legacy player message call",
+                            "ExampleFile":  "src\\main\\java\\tnt\\tarkovcraft\\medsystem\\common\\item\\BloodBagItem.java"
+                        }
+                    ],
+    "Evidence":  [
+                     {
+                         "Source":  "preserved source profile",
+                         "Value":  "1.21.1",
+                         "Detail":  "SOURCE_PROFILE.json"
+                     },
+                     {
+                         "Source":  "gradle.properties",
+                         "Value":  "1.21.1",
+                         "Detail":  "gradle.properties"
+                     },
+                     {
+                         "Source":  "mod metadata",
+                         "Value":  "1.21.1",
+                         "Detail":  "neoforge.mods.toml"
+                     }
+                 ],
+    "SolvedTransforms":  [
+                             "custom-block-registration",
+                             "client-package-moves",
+                             "cutout-render-type"
+                         ],
+    "AppliedSolutions":  [
+                             {
+                                 "Id":  "BAND-neoforge-1.21.1",
+                                 "Notes":  ""
+                             }
+                         ]
+}

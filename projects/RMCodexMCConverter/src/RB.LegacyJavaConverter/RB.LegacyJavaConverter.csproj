@@ -1,19 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\eng\Version.props" />
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>RMCodexMCConverter</AssemblyName>
+    <AssemblyName>RB-Legacy-Java-Converter</AssemblyName>
     <RootNamespace>RB.LegacyJavaConverter</RootNamespace>
     <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
-    <Product>RMCodexMCConverter</Product>
+    <Product>RB Legacy Java Converter</Product>
     <Company>RobbieB1980</Company>
-    <Version>1.0.0</Version>
-    <FileVersion>1.0.0</FileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
     <Description>Convert Forge 1.20.1 / NeoForge 1.21.x Java mod jars and workspaces to NeoForge 26.2 scaffolds</Description>
   </PropertyGroup>
 
@@ -22,11 +21,15 @@
     <None Include="..\..\Convert-JarToProject.ps1" Link="tools\Convert-JarToProject.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Convert-OldJarToNeoForge262.ps1" Link="tools\Convert-OldJarToNeoForge262.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Open-CodexRepairSession.ps1" Link="tools\Open-CodexRepairSession.ps1" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\Open-KATRepairSession.ps1" Link="tools\Open-KATRepairSession.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\Open-GrokRepairSession.ps1" Link="tools\Open-GrokRepairSession.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\Sync-CodexConverterWorkspace.ps1" Link="tools\Sync-CodexConverterWorkspace.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\Sync-GokuaiConverterWorkspace.ps1" Link="tools\Sync-GokuaiConverterWorkspace.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\gokuai-workspace-overlay\**\*" Link="tools\gokuai-workspace-overlay\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Build-WithDestinationJava.ps1" Link="tools\Build-WithDestinationJava.ps1" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\Find-ExactSource.ps1" Link="tools\Find-ExactSource.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\README.md" Link="tools\README.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\ConversionCore.ps1" Link="tools\lib\ConversionCore.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\ConversionManifest.ps1" Link="tools\lib\ConversionManifest.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\lib\SolutionsIndex.ps1" Link="tools\lib\SolutionsIndex.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\USAGE.md" Link="tools\docs\USAGE.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\JAR-PIPELINE.md" Link="tools\docs\JAR-PIPELINE.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\LICENSE" Link="tools\LICENSE" CopyToOutputDirectory="PreserveNewest" />
@@ -36,13 +39,6 @@
     <None Include="..\..\lib\Build-SrgToOfficialMap.py" Link="tools\lib\Build-SrgToOfficialMap.py" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\DependencyCatalog.json" Link="tools\lib\DependencyCatalog.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\lib\ModDependencyPipeline.ps1" Link="tools\lib\ModDependencyPipeline.ps1" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\lib\PrimerChangeIndex.json" Link="tools\lib\PrimerChangeIndex.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\lib\SolvedConversionIndex.json" Link="tools\lib\SolvedConversionIndex.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\lib\primer_changes\**\*" Link="tools\lib\primer_changes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\lib\dep_changes\**\*" Link="tools\lib\dep_changes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\lib\overlays\**\*" Link="tools\lib\overlays\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\lib\solved-problems\**\*" Link="tools\lib\solved-problems\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\lib\client-items\**\*" Link="tools\lib\client-items\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

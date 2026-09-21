@@ -48,7 +48,7 @@ class KnowledgeUpdateIntegrationTests(unittest.TestCase):
         self.assertIn("canonical_repository_paths", checks)
 
     def test_validator_rejects_active_pointers_with_missing_targets(self):
-        knowledge_root = self.station / "DataIndex" / "minecraft-knowledge"
+        knowledge_root = self.station / "DataIndex" / "minecraft-knowledge-local"
         mapping_root = self.data / "Minecraft_Mappings_Corpus"
         knowledge_root.mkdir(parents=True)
         mapping_root.mkdir(parents=True)

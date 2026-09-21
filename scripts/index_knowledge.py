@@ -15,10 +15,12 @@ SCHEMA_VERSION = 5
 TEXT_EXTENSIONS = {
     '.md', '.txt', '.json', '.toml', '.gradle', '.properties', '.java', '.kt', '.kts',
     '.py', '.ps1', '.xml', '.yml', '.yaml', '.cfg', '.csv', '.tsrg', '.tiny', '.mapping',
-    '.mappings', '.at', '.accesswidener', '.mcmeta', '.json5', '.js', '.ts', '.rs', '.groovy'
+    '.mappings', '.at', '.accesswidener', '.mcmeta', '.json5', '.js', '.ts', '.rs', '.groovy',
+    '.mdx', '.html', '.patch'
 }
 SPECIAL_NAMES = {'build.gradle', 'settings.gradle', 'gradle.properties', 'gradlew', 'gradlew.bat'}
 SKIP_DIRS = {'.git', '.gradle', '.idea', '.venv', '__pycache__', 'node_modules', 'build', 'out', 'target'}
+PATCH_SOURCE_ROOTS = {'NeoForm_All_Patches', 'Exact_Version_Sources'}
 MAX_FILE_SIZE = 8 * 1024 * 1024
 CHUNK_LINES = 90
 CHUNK_CHARS = 14000
@@ -127,6 +129,13 @@ def iter_text_files(source: SourceSpec, skipped: list[tuple[str, str]] | None = 
             p = c / name
             if not (name in SPECIAL_NAMES or p.suffix.lower() in TEXT_EXTENSIONS):
                 continue
+            if p.suffix.lower() == '.patch':
+                try:
+                    top = p.relative_to(source.root).parts[0]
+                except (ValueError, IndexError):
+                    top = ''
+                if top not in PATCH_SOURCE_ROOTS:
+                    continue
             if is_dedicated_mapping_source(source, p):
                 continue
             try:

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Root = $PSScriptRoot,
+    [string]$Root,
     [string]$Python,
     [switch]$ReleaseOnly,
     [switch]$IncludeServerJar,
@@ -11,6 +11,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+if ([string]::IsNullOrWhiteSpace($Root)) {
+    $Root = $PSScriptRoot
+}
 $Root = [IO.Path]::GetFullPath($Root)
 if ([string]::IsNullOrWhiteSpace($Python)) {
     $Python = Join-Path $Root 'runtime\python-mcp\Scripts\python.exe'

@@ -8,12 +8,12 @@ namespace RB.LegacyJavaConverter.Setup;
 
 public sealed class SetupForm : Form
 {
-    private const string AppDisplayName = "RMCodexMCConverter";
-    private const string ExeName = "RMCodexMCConverter.exe";
-    private const string UninstallRegKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\RMCodexMCConverter";
-    private const string AppPathsKey = @"Software\Microsoft\Windows\CurrentVersion\App Paths\RMCodexMCConverter.exe";
-    private const string DesktopLnk = "RMCodexMCConverter.lnk";
-    private const string StartMenuFolder = "RMCodexMCConverter";
+    private const string AppDisplayName = "RB Legacy Java Converter";
+    private const string ExeName = "RB-Legacy-Java-Converter.exe";
+    private const string UninstallRegKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\RB-Legacy-Java-Converter";
+    private const string AppPathsKey = @"Software\Microsoft\Windows\CurrentVersion\App Paths\RB-Legacy-Java-Converter.exe";
+    private const string DesktopLnk = "RB Legacy Java Converter.lnk";
+    private const string StartMenuFolder = "RB Legacy Java Converter";
 
     private readonly TextBox _txtDir = new();
     private readonly CheckBox _chkDesktop = new() { Text = "Create desktop shortcut", Checked = true, AutoSize = true };
@@ -44,7 +44,7 @@ public sealed class SetupForm : Form
 
         var title = new Label
         {
-            Text = AppDisplayName + " v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "2.10.9"),
+            Text = AppDisplayName + " v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "3.0.0"),
             Font = new Font("Segoe UI Semibold", 14f),
             ForeColor = Color.White,
             Location = new Point(24, 18),
@@ -67,7 +67,7 @@ public sealed class SetupForm : Form
         _txtDir.BorderStyle = BorderStyle.FixedSingle;
         _txtDir.Text = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "RMCodexMCConverter");
+            "RB-Legacy-Java-Converter");
 
         _btnBrowse.Location = new Point(474, 128);
         _btnBrowse.FlatStyle = FlatStyle.Flat;
@@ -372,7 +372,7 @@ public sealed class SetupForm : Form
 
     private static void WriteUninstaller(string dest, string exe)
     {
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "2.10.9";
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "3.0.0";
         var ps1 = Path.Combine(dest, "Uninstall.ps1");
         var cmd = Path.Combine(dest, "Uninstall.cmd");
 
@@ -419,7 +419,7 @@ Start-Process -FilePath cmd.exe -ArgumentList '/c', $cmd -WindowStyle Hidden
 
     private static void RegisterUninstall(string dest, string exe)
     {
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "2.10.9";
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "3.0.0";
         var versionFile = Path.Combine(dest, "version.txt");
         if (File.Exists(versionFile))
             version = File.ReadAllText(versionFile).Trim();

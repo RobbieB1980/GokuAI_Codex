@@ -1,0 +1,15 @@
+﻿# Files removed in the green medsystem 1.21.1 -> 26.2 conversion (soft-deps, Vineflower leftovers, broken client shaders/mixins).
+src/main/java/tnt/tarkovcraft/medsystem/client/LegacySubmitCustomGeometryHooks.java
+src/main/java/tnt/tarkovcraft/medsystem/client/shader/SimpleScalingShaderProgram.java
+src/main/java/tnt/tarkovcraft/medsystem/client/shader/StatusEffectShaderProgram.java
+src/main/java/tnt/tarkovcraft/medsystem/common/config/UnconsciousMode.java
+src/main/java/tnt/tarkovcraft/medsystem/common/consume_effect/ConsumeEffect.java
+src/main/java/tnt/tarkovcraft/medsystem/common/consume_effect/ConsumeEffectType.java
+src/main/java/tnt/tarkovcraft/medsystem/common/effect/UnconsciousStatusEffect.java
+src/main/java/tnt/tarkovcraft/medsystem/integration/carryon/CarryOnIntegration.java
+src/main/java/tnt/tarkovcraft/medsystem/integration/sable/SableIntegration.java
+src/main/java/tnt/tarkovcraft/medsystem/mixin/client/DebugRendererMixin.java
+src/main/java/tnt/tarkovcraft/medsystem/mixin/client/EntityRenderDispatcherMixin.java
+src/main/java/tnt/tarkovcraft/medsystem/util/MedsystemCodecs.java
+src/main/java/tnt/tarkovcraft/medsystem/util/Weighted.java
+src/main/java/tnt/tarkovcraft/medsystem/util/WeightedList.java

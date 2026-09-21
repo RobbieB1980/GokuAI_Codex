@@ -1,0 +1,13 @@
+﻿{
+    "SchemaVersion":  1,
+    "ExitCode":  0,
+    "Succeeded":  true,
+    "ErrorLineCount":  0,
+    "Categories":  {
+                       "missing-symbol-or-package":  0,
+                       "signature-or-type-change":  0,
+                       "access-or-removed-api":  100,
+                       "decompiler-artifact":  0
+                   },
+    "NextAction":  "Install the versioned build/libs JAR and runClient-test it."
+}

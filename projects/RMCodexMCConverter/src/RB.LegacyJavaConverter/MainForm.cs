@@ -7,7 +7,7 @@ namespace RB.LegacyJavaConverter;
 public sealed class MainForm : Form
 {
     private static string AppVersion =>
-        Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "2.10.9";
+        Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "3.0.0";
 
     private readonly RadioButton _radProject = new() { Text = "Mode A: Project folder (Forge source with src/)", AutoSize = true, Checked = true };
     private readonly RadioButton _radJar = new() { Text = "Mode B: Finished .jar file (decompile, not decrypt)", AutoSize = true };
@@ -18,7 +18,7 @@ public sealed class MainForm : Form
     private readonly TextBox _txtNeo = NewTextBox();
     private readonly TextBox _txtGecko = NewTextBox();
     private readonly CheckBox _chkCompile = NewCheck("Compile after convert (build must succeed)", false);
-    private readonly CheckBox _chkDry = NewCheck("Dry run (preview only - no files written)", false);
+    private readonly CheckBox _chkDry = NewCheck("Dry run (preview only — no files written)", false);
     private readonly CheckBox _chkContinueNeo = NewCheck("After decompile, also scaffold NeoForge 26.2", true);
     private readonly Label _lblOptionsHint = new()
     {
@@ -31,7 +31,7 @@ public sealed class MainForm : Form
     private readonly Button _btnBrowseOut = NewButton("Browse...", 110);
     private readonly Button _btnRun = NewButton("Convert", 130);
     private readonly Button _btnOpenOut = NewButton("Open output", 130);
-    private readonly Button _btnFixGrok = NewButton("Repair with KAT", 145);
+    private readonly Button _btnRepairGokuCodexAI = NewButton("Repair with GokuCodexAI", 190);
     private readonly Button _btnClear = NewButton("Clear log", 120);
     private readonly ProgressBar _progress = new()
     {
@@ -48,7 +48,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = $"RMCodexMCConverter v{AppVersion} - Project / JAR -> NeoForge 26.2";
+        Text = $"RB Legacy Java Converter v{AppVersion} — Project / JAR → NeoForge 26.2";
         ClientSize = new Size(980, 760);
         MinimumSize = new Size(840, 640);
         StartPosition = FormStartPosition.CenterScreen;
@@ -72,7 +72,7 @@ public sealed class MainForm : Form
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         header.Controls.Add(new Label
         {
-            Text = $"RMCodexMCConverter v{AppVersion} - Project or finished JAR -> NeoForge 26.2",
+            Text = $"RB Legacy Java Converter v{AppVersion} — Project or finished JAR → NeoForge 26.2",
             Font = new Font("Segoe UI Semibold", 12f),
             ForeColor = Color.White,
             AutoSize = true,
@@ -101,7 +101,7 @@ public sealed class MainForm : Form
         _radJar.Margin = new Padding(0, 2, 0, 2);
         modePanel.Controls.Add(new Label
         {
-            Text = "Choose input type first - Mode B switches Browse to a .jar file picker.",
+            Text = "Choose input type first — Mode B switches Browse to a .jar file picker.",
             AutoSize = true,
             ForeColor = Color.Khaki,
             Margin = new Padding(0, 0, 0, 6)
@@ -199,7 +199,7 @@ public sealed class MainForm : Form
         };
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));
-        actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));
+        actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120f));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
@@ -216,12 +216,12 @@ public sealed class MainForm : Form
         _btnOpenOut.Enabled = false;
         _btnOpenOut.Height = 36;
 
-        _btnFixGrok.Dock = DockStyle.Fill;
-        _btnFixGrok.Margin = new Padding(0, 4, 8, 4);
-        _btnFixGrok.Enabled = false;
-        _btnFixGrok.Height = 36;
-        _btnFixGrok.BackColor = Color.FromArgb(50, 70, 120);
-        _btnFixGrok.FlatAppearance.BorderColor = Color.FromArgb(90, 120, 180);
+        _btnRepairGokuCodexAI.Dock = DockStyle.Fill;
+        _btnRepairGokuCodexAI.Margin = new Padding(0, 4, 8, 4);
+        _btnRepairGokuCodexAI.Enabled = false;
+        _btnRepairGokuCodexAI.Height = 36;
+        _btnRepairGokuCodexAI.BackColor = Color.FromArgb(50, 70, 120);
+        _btnRepairGokuCodexAI.FlatAppearance.BorderColor = Color.FromArgb(90, 120, 180);
 
         _btnClear.Dock = DockStyle.Fill;
         _btnClear.Margin = new Padding(0, 4, 8, 4);
@@ -229,7 +229,7 @@ public sealed class MainForm : Form
 
         actions.Controls.Add(_btnRun, 0, 0);
         actions.Controls.Add(_btnOpenOut, 1, 0);
-        actions.Controls.Add(_btnFixGrok, 2, 0);
+        actions.Controls.Add(_btnRepairGokuCodexAI, 2, 0);
         actions.Controls.Add(_btnClear, 3, 0);
         actions.Controls.Add(_progress, 4, 0);
 
@@ -323,7 +323,7 @@ public sealed class MainForm : Form
             else
                 MessageBox.Show(this, "Output does not exist yet.", "Open output", MessageBoxButtons.OK, MessageBoxIcon.Information);
         };
-        _btnFixGrok.Click += (_, _) => LaunchKatRepairSession(offerPrompt: false);
+        _btnRepairGokuCodexAI.Click += (_, _) => LaunchCodexRepairSession(offerPrompt: false);
         _btnClear.Click += (_, _) => _log.Clear();
 
         Shown += (_, _) =>
@@ -398,11 +398,11 @@ public sealed class MainForm : Form
         if (_radJar.Checked)
         {
             _lblInput.Text = "Input .jar";
-            _btnRun.Text = (_chkContinueNeo.Checked && !_chkDry.Checked) ? "Jar -> 26.2" : "Decompile";
+            _btnRun.Text = (_chkContinueNeo.Checked && !_chkDry.Checked) ? "Jar → 26.2" : "Decompile";
             _chkContinueNeo.Visible = true;
             if (!_chkDry.Checked)
             {
-                _lblOptionsHint.Text = "JAR mode: Vineflower decompile -> src project; optional NeoForge scaffold.";
+                _lblOptionsHint.Text = "JAR mode: Vineflower decompile → src project; optional NeoForge scaffold.";
                 _lblOptionsHint.ForeColor = Color.FromArgb(160, 170, 180);
             }
         }
@@ -413,7 +413,7 @@ public sealed class MainForm : Form
             _chkContinueNeo.Visible = false;
             if (!_chkDry.Checked)
             {
-                _lblOptionsHint.Text = "Project mode: Forge 1.20.1 source tree -> NeoForge 26.2 scaffold.";
+                _lblOptionsHint.Text = "Project mode: Forge 1.20.1 source tree → NeoForge 26.2 scaffold.";
                 _lblOptionsHint.ForeColor = Color.FromArgb(160, 170, 180);
             }
         }
@@ -462,7 +462,7 @@ public sealed class MainForm : Form
         if (dry)
         {
             _chkCompile.Checked = false;
-            _lblOptionsHint.Text = "Dry run: preview only - no files written.";
+            _lblOptionsHint.Text = "Dry run: preview only — no files written.";
             _lblOptionsHint.ForeColor = Color.Khaki;
         }
 
@@ -595,7 +595,7 @@ public sealed class MainForm : Form
         _btnRun.Enabled = !busy;
         _btnBrowseIn.Enabled = !busy;
         _btnBrowseOut.Enabled = !busy;
-        _btnFixGrok.Enabled = !busy && !string.IsNullOrWhiteSpace(_lastOutput) && Directory.Exists(_lastOutput);
+        _btnRepairGokuCodexAI.Enabled = !busy && !string.IsNullOrWhiteSpace(_lastOutput) && Directory.Exists(_lastOutput);
         _txtInput.Enabled = !busy;
         _txtOutput.Enabled = !busy;
         _txtNeo.Enabled = !busy;
@@ -613,7 +613,7 @@ public sealed class MainForm : Form
             _chkCompile.Enabled = false;
             _chkDry.Enabled = false;
             _chkContinueNeo.Enabled = false;
-            _btnFixGrok.Enabled = false;
+            _btnRepairGokuCodexAI.Enabled = false;
         }
         else
         {
@@ -758,7 +758,7 @@ public sealed class MainForm : Form
         }
 
         _log.Clear();
-        AppendLog("RMCodexMCConverter", Color.White);
+        AppendLog("RB Legacy Java Converter", Color.White);
         AppendLog(jarMode ? "Mode  : JAR decompile pipeline" : "Mode  : Project convert", Color.LightSkyBlue);
         AppendLog($"Input : {inFull}", Color.LightSkyBlue);
         AppendLog($"Output: {outFull}", Color.LightGreen);
@@ -860,11 +860,11 @@ public sealed class MainForm : Form
                 {
                     AppendLog("The conversion scaffold was preserved for repair.", Color.Gold);
                     _btnOpenOut.Enabled = true;
-                    _btnFixGrok.Enabled = true;
+                    _btnRepairGokuCodexAI.Enabled = true;
                     if (File.Exists(Path.Combine(_lastOutput, "compile-errors.log")))
                         AppendLog("See compile-errors.log for the first remaining build error.", Color.Khaki);
-                    AppendLog("Click \"Repair with KAT\" to run the local KAT worker with primers and solved cases first.", Color.Khaki);
-                    LaunchKatRepairSession(offerPrompt: true);
+                    AppendLog("Click \"Repair with GokuCodexAI\" to open Codex with the complete repair evidence.", Color.Khaki);
+                    LaunchCodexRepairSession(offerPrompt: true);
                 }
             }
             try { _running.Dispose(); } catch { /* ignore */ }
@@ -873,16 +873,13 @@ public sealed class MainForm : Form
         _pollTimer.Start();
     }
 
-    /// <summary>
-    /// Opens local KAT through C:\GokuCodexAI\Open-KATRepairSession.ps1,
-    /// with a prompt that forces MIGRATION_EVIDENCE / primers / CASE files before inventing fixes.
-    /// </summary>
-    private void LaunchKatRepairSession(bool offerPrompt)
+    /// <summary>Prepares the failed output and opens Codex as the GokuCodexAI repair orchestrator.</summary>
+    private void LaunchCodexRepairSession(bool offerPrompt)
     {
         var output = string.IsNullOrWhiteSpace(_lastOutput) ? _txtOutput.Text.Trim() : _lastOutput;
         if (string.IsNullOrWhiteSpace(output) || !Directory.Exists(output))
         {
-            MessageBox.Show(this, "No conversion output folder to repair yet.", "Repair with KAT",
+            MessageBox.Show(this, "No conversion output folder to repair yet.", "Repair with GokuCodexAI",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -891,86 +888,56 @@ public sealed class MainForm : Form
         {
             var ask = MessageBox.Show(this,
                 "Conversion failed but a scaffold was written.\n\n" +
-                "Open local KAT in C:\\GokuCodexAI to repair it?\n" +
-                "The session will be instructed to read MIGRATION_EVIDENCE, primers, and CASE files BEFORE inventing fixes.",
-                "Repair with KAT",
+                "Open GokuCodexAI to repair it?\n" +
+                "Codex will receive the conversion evidence, native vNext skill, Solutions Index, and exact 26.2 knowledge before fresh reasoning.",
+                "Repair with GokuCodexAI",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
             if (ask != DialogResult.Yes) return;
         }
 
         const string gokuRoot = @"C:\GokuCodexAI";
-        var startGoku = Path.Combine(gokuRoot, "Open-KATRepairSession.ps1");
-        var workspace = Path.Combine(gokuRoot, "projects", "RMCodexMCConverter");
-        if (!File.Exists(startGoku))
+        var packagedLauncher = Path.Combine(AppContext.BaseDirectory, "tools", "Open-CodexRepairSession.ps1");
+        var adjacentLauncher = Path.Combine(AppContext.BaseDirectory, "Open-CodexRepairSession.ps1");
+        var launcher = File.Exists(packagedLauncher) ? packagedLauncher : adjacentLauncher;
+        if (!File.Exists(launcher))
         {
             MessageBox.Show(this,
-                "Open-KATRepairSession.ps1 was not found at:\n" + startGoku +
-                "\n\nInstall/update GokuCodexAI first (C:\\GokuCodexAI).",
-                "Repair with KAT", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                "Open-CodexRepairSession.ps1 was not found in the installed converter tools.\n\n" +
+                "Reinstall or update LegacyJavaConverter 3.0.0.",
+                "Repair with GokuCodexAI", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
-        if (!Directory.Exists(workspace))
+        if (!Directory.Exists(gokuRoot))
         {
             MessageBox.Show(this,
-                "Converter workspace missing:\n" + workspace,
-                "Repair with KAT", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                "GokuCodexAI was not found at:\n" + gokuRoot,
+                "Repair with GokuCodexAI", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
         try
         {
-            var promptPath = Path.Combine(output, "CODEX_REPAIR_REQUEST.md");
-            File.WriteAllText(promptPath, BuildCodexRepairPrompt(output), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-
             var args =
-                "-NoExit -ExecutionPolicy Bypass -File " + Quote(startGoku) +
-                " -ProjectPath " + Quote(workspace) +
-                " -Root " + Quote(gokuRoot) +
-                " -PromptFile " + Quote(promptPath);
+                "-NoProfile -ExecutionPolicy Bypass -File " + Quote(launcher) +
+                " -FailedOutput " + Quote(output) +
+                " -GokuRoot " + Quote(gokuRoot);
 
             Process.Start(new ProcessStartInfo
             {
                 FileName = "powershell.exe",
                 Arguments = args,
                 UseShellExecute = true,
-                WorkingDirectory = workspace
+                WorkingDirectory = output
             });
 
-            AppendLog("Launched local KAT repair workspace (no OpenAI model usage).", Color.LightSkyBlue);
-            AppendLog("Workspace: " + workspace, Color.DimGray);
-            AppendLog("Prompt file: " + promptPath, Color.DimGray);
+            AppendLog("Opened the GokuCodexAI repair preparation.", Color.LightSkyBlue);
+            AppendLog("Failed output: " + output, Color.DimGray);
         }
         catch (Exception ex)
         {
-            AppendLog("Failed to launch local KAT: " + ex.Message, Color.Salmon);
-            MessageBox.Show(this, ex.Message, "Repair with KAT", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            AppendLog("Failed to launch GokuCodexAI: " + ex.Message, Color.Salmon);
+            MessageBox.Show(this, ex.Message, "Repair with GokuCodexAI", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-    }
-
-    private static string BuildCodexRepairPrompt(string failedOutput)
-    {
-        var evidence = Path.Combine(failedOutput, "MIGRATION_EVIDENCE.md");
-        var profile = Path.Combine(failedOutput, "SOURCE_PROFILE.json");
-        var errors = Path.Combine(failedOutput, "compile-errors.log");
-        var packet = Path.Combine(failedOutput, "EVIDENCE_PACKET.md");
-        var buildHelper = @"C:\GokuCodexAI\projects\RMCodexMCConverter\Build-WithDestinationJava.ps1";
-        return
-            "Repair this failed RMCodexMCConverter to NeoForge 26.2 conversion.\n\n" +
-            "FAILED OUTPUT FOLDER:\n" + failedOutput + "\n\n" +
-            "CONTEXT SAFETY: Never read a full compile log, primer, source tree, or file over 200 lines. Search first and read at most 120 relevant lines per file. Keep gathered evidence under 12,000 tokens.\n" +
-            "WINDOWS TOOLS: Do not use Python, py, Add-Type, GZipFile, or extract a full source tree. Inspect source JAR entries with tar.exe -tf and read one entry with tar.exe -xOf. Never retry equivalent missing/denied tools.\n" +
-            "REPAIR BUDGET: Group errors by root cause. Maximum 3 edit/build cycles and 3 builds. Stop after the same root error survives twice or two tool/environment failures; write KAT_ESCALATION.md.\n\n" +
-            "MANDATORY EVIDENCE ORDER:\n" +
-            "1. Read " + evidence + ", " + profile + ", and a small excerpt of " + errors + ".\n" +
-            "2. Write a bounded evidence packet to " + packet + ".\n" +
-            "3. Check hardened fixes under C:\\gokuai\\Data\\Solved_Problems and C:\\gokuai\\Data\\262r.\n" +
-            "4. Open only the matching compact primer under C:\\gokuai\\Data\\NeoForge_Primers\\26.2.\n" +
-            "5. Confirm API claims against C:\\gokuai\\Data\\Exact_Version_Sources\\NeoForge\\26.2.\n" +
-            "6. Make the smallest grounded repair. Do not invent imports or APIs.\n" +
-            "7. Validate with destination JDK 25:\n" +
-            "   powershell -NoProfile -ExecutionPolicy Bypass -File \"" + buildHelper + "\" -ProjectRoot \"" + failedOutput + "\"\n" +
-            "8. Success requires gradlew build and a jar under build/libs; compileJava alone is insufficient.\n\n" +
-            "Use persistent KAT for bounded work. Escalate uncertainty to Codex Sol Medium; use High only for repeated failure, conflicting evidence, multi-version architecture, or subtle runtime bugs.";
     }
 }

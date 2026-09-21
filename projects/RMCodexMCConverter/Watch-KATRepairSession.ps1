@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([Parameter(Mandatory)][int]$TerminalProcessId,[Parameter(Mandatory)][string]$ProjectRoot,[Parameter(Mandatory)][string]$Workspace,[Parameter(Mandatory)][datetime]$StartedAt,[int]$MaxMinutes=8,[int]$MaxToolCalls=20,[int]$MaxBuilds=1)
 $ErrorActionPreference='SilentlyContinue'
 function Stop-Repair([string]$Reason){
@@ -23,7 +23,7 @@ function Stop-Repair([string]$Reason){
  & taskkill.exe /PID $TerminalProcessId /T /F 2>$null|Out-Null
  if(-not(Test-Path (Join-Path $ProjectRoot 'CODEX_GUIDANCE.md'))){
   $launcher='C:\GokuCodexAI\Open-CodexRepairSession.ps1'
-  if(Test-Path $launcher){Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher,'-ProjectPath',$Workspace,'-PromptFile',$escalation) -WorkingDirectory $ProjectRoot|Out-Null}
+  if(Test-Path $launcher){Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher,'-ProjectPath',$Workspace,'-PromptFile',$escalation,'-Route','fallback') -WorkingDirectory $ProjectRoot|Out-Null}
  }
  exit
 }
