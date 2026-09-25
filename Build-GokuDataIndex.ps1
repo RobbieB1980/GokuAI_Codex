@@ -7,7 +7,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Write-Host "NOTE: goku-data.db is legacy/benchmark-only. Canonical index: DataIndex\minecraft-knowledge-local + knowledge_mcp." -ForegroundColor Yellow
-$python = 'C:\GokuCodexAI\runtime\python-mcp\Scripts\python.exe'
+$python = 'C:\GokuCodexAI\runtime\python-mcp-v2\Scripts\python.exe'
 $script = 'C:\GokuCodexAI\scripts\index_goku_data.py'
 if (-not (Test-Path $python)) { throw "Python missing: $python" }
 if (-not (Test-Path $script)) { throw "Indexer missing: $script" }

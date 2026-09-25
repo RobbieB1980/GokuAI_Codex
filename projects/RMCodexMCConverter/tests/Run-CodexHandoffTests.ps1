@@ -68,11 +68,11 @@ try {
     New-Item -ItemType Directory -Path (Split-Path -Parent $sentinel) -Force | Out-Null
     Set-Content -LiteralPath $sentinel -Value 'class UserFile {}' -Encoding UTF8
     $gokuRoot = Join-Path $fixture 'fake GokuCodexAI'
-    New-Item -ItemType Directory -Path (Join-Path $gokuRoot 'runtime\python-mcp\Scripts'), (Join-Path $gokuRoot 'scripts'), (Join-Path $gokuRoot 'Data'), (Join-Path $gokuRoot 'DataIndex\minecraft-knowledge-local') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $gokuRoot 'runtime\python-mcp-v2\Scripts'), (Join-Path $gokuRoot 'scripts'), (Join-Path $gokuRoot 'Data'), (Join-Path $gokuRoot 'DataIndex\minecraft-knowledge-local') -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $gokuRoot 'config') -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $gokuRoot 'config\gokuai.json') -Value '{"codex_orchestrator":{"primary":{"label":"Luna High","model":"gpt-5.6-luna-high","reasoning_effort":"high"},"fallback":{"label":"Sol Medium","model":"gpt-5.6-sol-medium","reasoning_effort":"medium"}}}' -Encoding UTF8
-    Set-Content -LiteralPath (Join-Path $gokuRoot 'runtime\python-mcp\Scripts\python.exe') -Value 'fixture' -Encoding ASCII
-    Set-Content -LiteralPath (Join-Path $gokuRoot 'scripts\knowledge_mcp.py') -Value '# fixture' -Encoding ASCII
+    Set-Content -LiteralPath (Join-Path $gokuRoot 'runtime\python-mcp-v2\Scripts\python.exe') -Value 'fixture' -Encoding ASCII
+    Set-Content -LiteralPath (Join-Path $gokuRoot 'scripts\knowledge_mcp_v2.py') -Value '# fixture' -Encoding ASCII
     Set-Content -LiteralPath (Join-Path $gokuRoot 'DataIndex\minecraft-knowledge-local\knowledge.test.db') -Value 'fixture' -Encoding ASCII
     Set-Content -LiteralPath (Join-Path $gokuRoot 'DataIndex\minecraft-knowledge-local\_ACTIVE_DB.txt') -Value 'knowledge.test.db' -Encoding ASCII
 

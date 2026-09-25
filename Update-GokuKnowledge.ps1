@@ -16,7 +16,7 @@ if ([string]::IsNullOrWhiteSpace($Root)) {
 }
 $Root = [IO.Path]::GetFullPath($Root)
 if ([string]::IsNullOrWhiteSpace($Python)) {
-    $Python = Join-Path $Root 'runtime\python-mcp\Scripts\python.exe'
+    $Python = Join-Path $Root 'runtime\python-mcp-v2\Scripts\python.exe'
 }
 $dataRoot = Join-Path $Root 'Data'
 $indexRoot = Join-Path $Root 'DataIndex\minecraft-knowledge-local'

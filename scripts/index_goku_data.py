@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Legacy/simple FTS builder for benchmark consumers.
 
-Canonical agent retrieval uses index_knowledge.py + knowledge_mcp.py.
+Canonical agent retrieval uses index_knowledge.py + knowledge_mcp_v2.py.
 This index should stay slim: migration-relevant text only, no mapping dumps
 or resource-pack asset noise.
 """

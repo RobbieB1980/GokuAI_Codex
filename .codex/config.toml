@@ -5,8 +5,8 @@ model_reasoning_summary = "auto"
 model_verbosity = "medium"
 
 [mcp_servers.minecraft-knowledge]
-command = 'C:\GokuCodexAI\runtime\python-mcp\Scripts\python.exe'
-args = ['C:\GokuCodexAI\scripts\knowledge_mcp.py', '--db', 'C:\GokuCodexAI\DataIndex\minecraft-knowledge-local\knowledge.v5.1789184507.db', '--root', 'C:\GokuCodexAI\Data']
+command = 'C:\GokuCodexAI\runtime\python-mcp-v2\Scripts\python.exe'
+args = ['C:\GokuCodexAI\scripts\knowledge_mcp_v2.py', '--db', 'C:\GokuCodexAI\DataIndex\minecraft-knowledge-local\knowledge.v5.1789184507.db', '--root', 'C:\GokuCodexAI\Data']
 cwd = 'C:\GokuCodexAI'
 required = true
 startup_timeout_sec = 60

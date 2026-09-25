@@ -7,9 +7,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $project = (Resolve-Path -LiteralPath $ProjectPath).Path
-$python = Join-Path $Root 'runtime\python-mcp\Scripts\python.exe'
+$python = Join-Path $Root 'runtime\python-mcp-v2\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $python)) {
-    $python = Join-Path $Root 'runtime\python-mcp\Scripts\python.exe'
+    $python = Join-Path $Root 'runtime\python-mcp-v2\Scripts\python.exe'
 }
 $script = Join-Path $Root 'scripts\generate_project_knowledge_context.py'
 if (-not (Test-Path -LiteralPath $python)) { throw "Python runtime missing: $python" }

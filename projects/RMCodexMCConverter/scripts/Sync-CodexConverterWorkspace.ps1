@@ -82,12 +82,12 @@ $requiredOverlay = @(
 foreach ($relative in $requiredOverlay) { Assert-RequiredFile (Join-Path $overlay $relative) $relative }
 
 $GokuRoot = (Resolve-Path -LiteralPath $GokuRoot).Path
-$python = Join-Path $GokuRoot 'runtime\python-mcp\Scripts\python.exe'
-$mcpScript = Join-Path $GokuRoot 'scripts\knowledge_mcp.py'
+$python = Join-Path $GokuRoot 'runtime\python-mcp-v2\Scripts\python.exe'
+$mcpScript = Join-Path $GokuRoot 'scripts\knowledge_mcp_v2.py'
 $knowledgeRoot = Join-Path $GokuRoot 'Data'
 $knowledgeDb = Resolve-KnowledgeDatabase $GokuRoot
-Assert-RequiredFile $python 'runtime\python-mcp\Scripts\python.exe'
-Assert-RequiredFile $mcpScript 'scripts\knowledge_mcp.py'
+Assert-RequiredFile $python 'runtime\python-mcp-v2\Scripts\python.exe'
+Assert-RequiredFile $mcpScript 'scripts\knowledge_mcp_v2.py'
 if (-not (Test-Path -LiteralPath $knowledgeRoot -PathType Container)) { throw "Missing knowledge root: $knowledgeRoot" }
 
 New-Item -ItemType Directory -Path $Workspace -Force | Out-Null

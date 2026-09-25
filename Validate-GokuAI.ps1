@@ -35,7 +35,7 @@ if (-not $codex) {
 Check 'Codex CLI discovery' ($null -ne $codex)
 
 $codexConfig = if (Test-Path $codexConfigPath) { Get-Content -LiteralPath $codexConfigPath -Raw } else { '' }
-Check 'MCP command uses canonical root' ($codexConfig -match [regex]::Escape('C:\GokuCodexAI\runtime\python-mcp\Scripts\python.exe'))
+Check 'MCP command uses canonical root' ($codexConfig -match [regex]::Escape('C:\GokuCodexAI\runtime\python-mcp-v2\Scripts\python.exe'))
 Check 'MCP database uses canonical root' ($codexConfig -match [regex]::Escape('C:\GokuCodexAI\DataIndex\minecraft-knowledge-local'))
 Check 'MCP knowledge uses canonical root' ($codexConfig -match [regex]::Escape("'C:\GokuCodexAI\Data'"))
 
