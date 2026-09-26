@@ -26,5 +26,10 @@
     "minecraft_release": "https://www.minecraft.net/en-us/article/minecraft-java-edition-26-3",
     "minecraft_source_release": "https://www.minecraft.net/en-us/article/minecraft-java-edition-26-2",
     "neoforge_primer": "https://docs.neoforged.net/primer/docs/26.3/"
+  },
+  "knowledge": {
+    "index": "knowledge/PrimerChangeIndex-26.2-to-26.3.json",
+    "ordered_primer": "knowledge/primer_changes_26.2-to-26.3/index.md",
+    "minimum_entries": 12
   }
 }

@@ -60,6 +60,11 @@ function Invoke-RB262To263 {
         [string]$NeoVersion = ''
     )
     $inputFull = (Resolve-Path -LiteralPath $InputPath -ErrorAction Stop).Path
+    $targetRoot = Split-Path -Parent $PSScriptRoot
+    $knowledgePath = Join-Path $targetRoot 'knowledge\PrimerChangeIndex-26.2-to-26.3.json'
+    if (-not (Test-Path -LiteralPath $knowledgePath -PathType Leaf)) { throw "Missing 26.2 -> 26.3 knowledge index: $knowledgePath" }
+    $knowledge = Read-JsonFile $knowledgePath
+    if ($knowledge.entries.Count -lt 12) { throw '26.2 -> 26.3 knowledge index is incomplete.' }
     if (-not (Test-Path -LiteralPath $OutputPath)) { $outputFull = [IO.Path]::GetFullPath($OutputPath) } else { $outputFull = (Resolve-Path -LiteralPath $OutputPath).Path }
     if ($inputFull.TrimEnd('\') -eq $outputFull.TrimEnd('\')) { throw 'Input and output paths must be different.' }
     $props = Get-ChildItem -LiteralPath $inputFull -Recurse -File -Include '*.properties','*.gradle','*.gradle.kts','mods.toml' -ErrorAction SilentlyContinue
@@ -87,7 +92,7 @@ function Invoke-RB262To263 {
         Write-JsonFile $file.FullName $json
         $changed.Add($file.FullName.Substring($outputFull.Length + 1))
     }
-    $manifest = [ordered]@{ target_id='rb-26.2-to-26.3'; status='Converted'; source_path=$inputFull; output_path=$outputFull; source_minecraft='26.2'; target_minecraft='26.3'; target_neo_version=$NeoVersion; changed_files=@($changed); warnings=@($warnings); validation=[ordered]@{ deterministic_changes=$true; build='not-run'; runtime='not-run'; content='not-run' } }
+    $manifest = [ordered]@{ target_id='rb-26.2-to-26.3'; status='Converted'; source_path=$inputFull; output_path=$outputFull; source_minecraft='26.2'; target_minecraft='26.3'; target_neo_version=$NeoVersion; knowledge_index='PrimerChangeIndex-26.2-to-26.3.json'; knowledge_entries=$knowledge.entries.Count; changed_files=@($changed); warnings=@($warnings); validation=[ordered]@{ deterministic_changes=$true; build='not-run'; runtime='not-run'; content='not-run' } }
     Write-JsonFile (Join-Path $outputFull 'conversion-manifest.json') $manifest
     $evidence = @('# RB 26.2 → 26.3 migration evidence','',"Target NeoForge version: $NeoVersion",'', '## Changed files') + @($changed | ForEach-Object { '- ' + $_ }) + @('', '## Remaining review') + @($warnings | ForEach-Object { '- ' + $_ }) + @('- Client/rendering Java APIs require AST or Codex repair review.', '- Dependency compatibility and Gradle build remain unvalidated until the target NeoForge artifact is available.')
     Set-Content -LiteralPath (Join-Path $outputFull 'MIGRATION_EVIDENCE.md') -Value $evidence -Encoding UTF8

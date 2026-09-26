@@ -3,6 +3,7 @@ $repo = Split-Path -Parent $PSScriptRoot
 $targetRoot = Join-Path $repo 'targets\rb-26.2-to-26.3'
 $manifestPath = Join-Path $targetRoot 'target-manifest.json'
 $enginePath = Join-Path $targetRoot 'lib\Convert-RB262To263.ps1'
+$knowledgePath = Join-Path $targetRoot 'knowledge\PrimerChangeIndex-26.2-to-26.3.json'
 
 function Assert-True([bool]$condition, [string]$message) {
     if (-not $condition) { throw "ASSERTION FAILED: $message" }
@@ -10,11 +11,15 @@ function Assert-True([bool]$condition, [string]$message) {
 
 Assert-True (Test-Path -LiteralPath $manifestPath) 'target manifest exists'
 Assert-True (Test-Path -LiteralPath $enginePath) 'conversion engine exists'
+Assert-True (Test-Path -LiteralPath $knowledgePath) 'knowledge index exists'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 Assert-True ($manifest.source.minecraft -eq '26.2') 'source Minecraft is 26.2'
 Assert-True ($manifest.target.minecraft -eq '26.3') 'target Minecraft is 26.3'
 Assert-True ($manifest.target.data_pack_version -eq '121.0') 'target data pack version is 121.0'
 Assert-True ($manifest.target.resource_pack_version -eq '97.1') 'target resource pack version is 97.1'
+$knowledge = Get-Content -LiteralPath $knowledgePath -Raw | ConvertFrom-Json
+Assert-True ($knowledge.entries.Count -ge 12) 'knowledge index has required change families'
+Assert-True (($knowledge.entries | Where-Object risk -eq 'manual').Count -ge 4) 'manual repair risks are represented'
 
 . $enginePath
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('rb262263-' + [guid]::NewGuid().ToString('N'))
