@@ -18,10 +18,11 @@ public sealed class MainForm : Form
         Width = 920;
         Height = 650;
         StartPosition = FormStartPosition.CenterScreen;
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(14), ColumnCount = 3, RowCount = 7 };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(14), ColumnCount = 4, RowCount = 7 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
@@ -30,27 +31,30 @@ public sealed class MainForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.Controls.Add(new Label { Text = "Input 26.2 project", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
-        layout.Controls.Add(_input, 1, 0); layout.Controls.Add(CreateBrowse(_input, false), 2, 0);
+        layout.Controls.Add(_input, 1, 0); layout.Controls.Add(CreateFolderBrowse(_input), 2, 0); layout.Controls.Add(CreateJarBrowse(_input), 3, 0);
         layout.Controls.Add(new Label { Text = "Output 26.3 project", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
-        layout.Controls.Add(_output, 1, 1); layout.Controls.Add(CreateBrowse(_output, true), 2, 1);
+        layout.Controls.Add(_output, 1, 1); layout.SetColumnSpan(_output, 2); layout.Controls.Add(CreateFolderBrowse(_output), 3, 1);
         layout.Controls.Add(new Label { Text = "NeoForge 26.3 pin", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
         layout.Controls.Add(_neo, 1, 2);
         layout.Controls.Add(new Label { Text = "Required until the official stable 26.3 artifact is pinned.", AutoSize = true, ForeColor = Color.DimGray, Anchor = AnchorStyles.Left }, 1, 3);
-        layout.SetColumnSpan(_status, 3); layout.Controls.Add(_status, 0, 3);
-        layout.SetColumnSpan(_run, 3); layout.Controls.Add(_run, 0, 4);
-        layout.SetColumnSpan(_log, 3); layout.Controls.Add(_log, 0, 6);
+        layout.SetColumnSpan(_status, 4); layout.Controls.Add(_status, 0, 3);
+        layout.SetColumnSpan(_run, 4); layout.Controls.Add(_run, 0, 4);
+        layout.SetColumnSpan(_log, 4); layout.Controls.Add(_log, 0, 6);
         Controls.Add(layout);
         _run.Click += async (_, _) => await RunConversionAsync();
     }
 
-    private static Button CreateBrowse(TextBox target, bool folder)
+    private static Button CreateFolderBrowse(TextBox target)
     {
-        var button = new Button { Text = "Browse…", Dock = DockStyle.Fill };
-        button.Click += (_, _) =>
-        {
-            if (folder) { using var dialog = new FolderBrowserDialog(); if (dialog.ShowDialog() == DialogResult.OK) target.Text = dialog.SelectedPath; }
-            else { using var dialog = new FolderBrowserDialog(); if (dialog.ShowDialog() == DialogResult.OK) target.Text = dialog.SelectedPath; }
-        };
+        var button = new Button { Text = "Folder…", Dock = DockStyle.Fill };
+        button.Click += (_, _) => { using var dialog = new FolderBrowserDialog(); if (dialog.ShowDialog() == DialogResult.OK) target.Text = dialog.SelectedPath; };
+        return button;
+    }
+
+    private static Button CreateJarBrowse(TextBox target)
+    {
+        var button = new Button { Text = "JAR…", Dock = DockStyle.Fill };
+        button.Click += (_, _) => { using var dialog = new OpenFileDialog { Filter = "Java mod JAR (*.jar)|*.jar|All files (*.*)|*.*", CheckFileExists = true }; if (dialog.ShowDialog() == DialogResult.OK) target.Text = dialog.FileName; };
         return button;
     }
 

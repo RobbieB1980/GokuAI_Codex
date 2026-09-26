@@ -42,6 +42,14 @@ Assert-True ($worldgen.unknown -eq 7) 'unknown worldgen field preserved'
 $second = Invoke-RB262To263 -InputPath $output -OutputPath (Join-Path $fixture 'output2') -NeoVersion '26.3.0.1-beta'
 Assert-True ($second.Status -eq 'Rejected') 'already-26.3 output is rejected as input'
 
+$jar = Join-Path $fixture 'fixture-26.2.jar'
+Compress-Archive -Path (Join-Path $input '*') -DestinationPath $jar -Force
+$jarOutput = Join-Path $fixture 'jar-output'
+$jarResult = Invoke-RB262To263 -InputPath $jar -OutputPath $jarOutput -NeoVersion '26.3.0.1-beta'
+Assert-True ($jarResult.Status -eq 'Converted') 'JAR input is converted'
+Assert-True ($jarResult.input_kind -eq 'jar') 'JAR input kind recorded'
+Assert-True (Test-Path -LiteralPath (Join-Path $jarOutput 'conversion-manifest.json')) 'JAR conversion manifest written'
+
 try { Invoke-RB262To263 -InputPath $input -OutputPath $input; throw 'same input/output was accepted' } catch { Assert-True ($_.Exception.Message -match 'different') 'same path rejected' }
 Remove-Item -LiteralPath $fixture -Recurse -Force
 Write-Host 'RB 26.2 -> 26.3 target tests passed' -ForegroundColor Green
