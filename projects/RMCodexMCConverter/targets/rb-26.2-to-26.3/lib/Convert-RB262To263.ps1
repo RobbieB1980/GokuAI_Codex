@@ -12,14 +12,25 @@ function Remove-JsonProperty {
 
 function Read-JsonFile([string]$Path) { Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json }
 
+function Get-RB262To263OutputPath([string]$InputPath) {
+    $full = [IO.Path]::GetFullPath($InputPath)
+    if (Test-Path -LiteralPath $full -PathType Leaf) { $name = [IO.Path]::GetFileNameWithoutExtension($full); $parent = Split-Path -Parent $full }
+    else { $name = Split-Path -Leaf $full.TrimEnd('\\','/'); $parent = Split-Path -Parent $full }
+    $candidate = Join-Path $parent ("RB-{0}-26.3" -f $name)
+    $i = 2
+    while (Test-Path -LiteralPath $candidate) { $candidate = Join-Path $parent ("RB-{0}-26.3-{1}" -f $name, $i); $i++ }
+    return $candidate
+}
+
 function Write-JsonFile([string]$Path, $Value) {
     $Value | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $Path -Encoding UTF8
 }
 
 function Update-TextVersionMarkers([string]$Path, [string]$NeoVersion) {
     $text = Get-Content -LiteralPath $Path -Raw
+    $normalizedNeoVersion = $NeoVersion -replace '^neoforge-', ''
     $updated = $text -replace '(?im)(minecraft[_\.-]version\s*[=:]\s*["'']?)26\.2(["'']?)', '$126.3$2'
-    $updated = $updated -replace '(?im)(neo[_\.-]version\s*[=:]\s*["'']?)26\.2(?:\.\d+)?(?:-[^"''\s]+)?(["'']?)', ('$1' + $NeoVersion + '$2')
+    $updated = $updated -replace '(?im)(neo[_\.-]version\s*[=:]\s*["'']?)26\.2(?:\.\d+)?(?:-[^"''\s]+)?(["'']?)', ('$1' + $normalizedNeoVersion + '$2')
     if ($updated -ne $text) { Set-Content -LiteralPath $Path -Value $updated -Encoding UTF8; return $true }
     return $false
 }
@@ -56,8 +67,8 @@ function Invoke-RB262To263 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$InputPath,
-        [Parameter(Mandatory)][string]$OutputPath,
-        [string]$NeoVersion = ''
+        [string]$OutputPath = '',
+        [string]$NeoVersion = 'neoforge-26.3.0.7-beta'
     )
     $resolvedInput = (Resolve-Path -LiteralPath $InputPath -ErrorAction Stop).Path
     $temporaryInput = $null
@@ -73,7 +84,8 @@ function Invoke-RB262To263 {
     if (-not (Test-Path -LiteralPath $knowledgePath -PathType Leaf)) { throw "Missing 26.2 -> 26.3 knowledge index: $knowledgePath" }
     $knowledge = Read-JsonFile $knowledgePath
     if ($knowledge.entries.Count -lt 12) { throw '26.2 -> 26.3 knowledge index is incomplete.' }
-    if (-not (Test-Path -LiteralPath $OutputPath)) { $outputFull = [IO.Path]::GetFullPath($OutputPath) } else { $outputFull = (Resolve-Path -LiteralPath $OutputPath).Path }
+    if ([string]::IsNullOrWhiteSpace($OutputPath)) { $outputFull = Get-RB262To263OutputPath $resolvedInput }
+    elseif (-not (Test-Path -LiteralPath $OutputPath)) { $outputFull = [IO.Path]::GetFullPath($OutputPath) } else { $outputFull = (Resolve-Path -LiteralPath $OutputPath).Path }
     if ($resolvedInput.TrimEnd('\') -eq $outputFull.TrimEnd('\')) { throw 'Input and output paths must be different.' }
     $props = Get-ChildItem -LiteralPath $inputFull -Recurse -File -Include '*.properties','*.gradle','*.gradle.kts','mods.toml' -ErrorAction SilentlyContinue
     $sourceText = ($props | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"

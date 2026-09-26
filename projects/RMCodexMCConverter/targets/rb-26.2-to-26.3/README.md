@@ -15,15 +15,14 @@ The preview currently performs only deterministic, evidence-backed changes:
 - writes a conversion manifest and migration evidence report;
 - flags renderer/client API, ambiguous worldgen, and dependency work for AST/Codex repair.
 
-The target does not silently invent a stable NeoForge 26.3 dependency pin. The
-official target pin must be supplied with `-NeoVersion` until NeoForge publishes
-the stable 26.3 artifact.
+The target defaults to `neoforge-26.3.0.7-beta`. Supply `-NeoVersion` when a
+different official 26.3 artifact is required.
 
 ```powershell
 & .\targets\rb-26.2-to-26.3\Convert-RB262To263.ps1 `
   -InputPath C:\mods\my-mod-26.2 `
   -OutputPath C:\mods\my-mod-26.3 `
-  -NeoVersion '<official-26.3-neoforge-version>'
+  -NeoVersion 'neoforge-26.3.0.7-beta'
 ```
 
 Build success, client launch, registry/data loading, and gameplay behavior are

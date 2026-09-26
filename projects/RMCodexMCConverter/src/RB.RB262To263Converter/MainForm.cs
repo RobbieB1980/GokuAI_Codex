@@ -7,7 +7,7 @@ public sealed class MainForm : Form
 {
     private readonly TextBox _input = new() { Dock = DockStyle.Fill };
     private readonly TextBox _output = new() { Dock = DockStyle.Fill };
-    private readonly TextBox _neo = new() { Text = "", Dock = DockStyle.Fill };
+    private readonly TextBox _neo = new() { Text = "neoforge-26.3.0.7-beta", Dock = DockStyle.Fill };
     private readonly TextBox _log = new() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill };
     private readonly Button _run = new() { Text = "Convert 26.2 → 26.3", AutoSize = true };
     private readonly Label _status = new() { Text = "Preview target: exact NeoForge 26.2 input → NeoForge 26.3 output", AutoSize = true, ForeColor = Color.DarkGoldenrod };
@@ -44,24 +44,39 @@ public sealed class MainForm : Form
         _run.Click += async (_, _) => await RunConversionAsync();
     }
 
-    private static Button CreateFolderBrowse(TextBox target)
+    private Button CreateFolderBrowse(TextBox target)
     {
         var button = new Button { Text = "Folder…", Dock = DockStyle.Fill };
-        button.Click += (_, _) => { using var dialog = new FolderBrowserDialog(); if (dialog.ShowDialog() == DialogResult.OK) target.Text = dialog.SelectedPath; };
+        button.Click += (_, _) => { using var dialog = new FolderBrowserDialog(); if (dialog.ShowDialog() == DialogResult.OK) { target.Text = dialog.SelectedPath; if (ReferenceEquals(target, _input)) SuggestOutput(dialog.SelectedPath); } };
         return button;
     }
 
-    private static Button CreateJarBrowse(TextBox target)
+    private Button CreateJarBrowse(TextBox target)
     {
         var button = new Button { Text = "JAR…", Dock = DockStyle.Fill };
-        button.Click += (_, _) => { using var dialog = new OpenFileDialog { Filter = "Java mod JAR (*.jar)|*.jar|All files (*.*)|*.*", CheckFileExists = true }; if (dialog.ShowDialog() == DialogResult.OK) target.Text = dialog.FileName; };
+        button.Click += (_, _) => { using var dialog = new OpenFileDialog { Filter = "Java mod JAR (*.jar)|*.jar|All files (*.*)|*.*", CheckFileExists = true }; if (dialog.ShowDialog() == DialogResult.OK) { target.Text = dialog.FileName; if (ReferenceEquals(target, _input)) SuggestOutput(dialog.FileName); } };
         return button;
+    }
+
+    private void SuggestOutput(string input)
+    {
+        try
+        {
+            var full = Path.GetFullPath(input);
+            var name = File.Exists(full) ? Path.GetFileNameWithoutExtension(full) : new DirectoryInfo(full).Name;
+            var parent = Directory.GetParent(full)?.FullName ?? full;
+            var candidate = Path.Combine(parent, $"RB-{name}-26.3");
+            var i = 2;
+            while (Directory.Exists(candidate)) { candidate = Path.Combine(parent, $"RB-{name}-26.3-{i}"); i++; }
+            _output.Text = candidate;
+        }
+        catch { }
     }
 
     private async Task RunConversionAsync()
     {
-        if (string.IsNullOrWhiteSpace(_input.Text) || string.IsNullOrWhiteSpace(_output.Text) || string.IsNullOrWhiteSpace(_neo.Text))
-        { MessageBox.Show(this, "Choose an input, a different output folder, and an official NeoForge 26.3 version.", "Missing input", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        if (string.IsNullOrWhiteSpace(_input.Text) || string.IsNullOrWhiteSpace(_neo.Text))
+        { MessageBox.Show(this, "Choose an input and an official NeoForge 26.3 version.", "Missing input", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
         _run.Enabled = false; _log.Clear(); _status.Text = "Running deterministic 26.2 → 26.3 preview passes…";
         try
         {

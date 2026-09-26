@@ -17,6 +17,7 @@ Assert-True ($manifest.source.minecraft -eq '26.2') 'source Minecraft is 26.2'
 Assert-True ($manifest.target.minecraft -eq '26.3') 'target Minecraft is 26.3'
 Assert-True ($manifest.target.data_pack_version -eq '121.0') 'target data pack version is 121.0'
 Assert-True ($manifest.target.resource_pack_version -eq '97.1') 'target resource pack version is 97.1'
+Assert-True ($manifest.target.neo_version -eq 'neoforge-26.3.0.7-beta') 'default NeoForge pin is current beta'
 $knowledge = Get-Content -LiteralPath $knowledgePath -Raw | ConvertFrom-Json
 Assert-True ($knowledge.entries.Count -ge 12) 'knowledge index has required change families'
 Assert-True (($knowledge.entries | Where-Object risk -eq 'manual').Count -ge 4) 'manual repair risks are represented'
@@ -45,10 +46,13 @@ Assert-True ($second.Status -eq 'Rejected') 'already-26.3 output is rejected as 
 $jar = Join-Path $fixture 'fixture-26.2.jar'
 Compress-Archive -Path (Join-Path $input '*') -DestinationPath $jar -Force
 $jarOutput = Join-Path $fixture 'jar-output'
-$jarResult = Invoke-RB262To263 -InputPath $jar -OutputPath $jarOutput -NeoVersion '26.3.0.1-beta'
+$jarResult = Invoke-RB262To263 -InputPath $jar -OutputPath $jarOutput -NeoVersion 'neoforge-26.3.0.7-beta'
 Assert-True ($jarResult.Status -eq 'Converted') 'JAR input is converted'
 Assert-True ($jarResult.input_kind -eq 'jar') 'JAR input kind recorded'
 Assert-True (Test-Path -LiteralPath (Join-Path $jarOutput 'conversion-manifest.json')) 'JAR conversion manifest written'
+
+$autoOutput = Invoke-RB262To263 -InputPath $jar -NeoVersion 'neoforge-26.3.0.7-beta'
+Assert-True ($autoOutput.output_path -match 'RB-fixture-26\.2-26\.3(?:-\d+)?$') 'default output uses RB prefix and 26.3 suffix'
 
 try { Invoke-RB262To263 -InputPath $input -OutputPath $input; throw 'same input/output was accepted' } catch { Assert-True ($_.Exception.Message -match 'different') 'same path rejected' }
 Remove-Item -LiteralPath $fixture -Recurse -Force
