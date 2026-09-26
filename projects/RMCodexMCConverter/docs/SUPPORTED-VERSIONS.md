@@ -2,6 +2,8 @@
 
 The converter targets NeoForge 26.2 and selects its migration passes from detected metadata and Java API evidence.
 
+The separate `RB 26.2 → 26.3 Converter Preview` accepts only exact NeoForge 26.2 projects and emits a distinct 26.3 output folder. It is not a route inside the legacy converter and requires an explicit official NeoForge 26.3 version pin.
+
 | Source | Detection | Conversion route |
 |---|---|---|
 | Forge 1.20.1 | Supported | Forge/SRG, registry, event, MCreator and cumulative 26.2 migrations |

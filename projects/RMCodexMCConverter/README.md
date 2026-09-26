@@ -6,6 +6,10 @@ Windows GUI and PowerShell migration assistant for **Forge/NeoForge 1.20.1 throu
 
 The converter detects the source version and API features, decompiles finished JARs, migrates known Java/resource patterns, resolves dependencies, generates the 26.2 project and optionally runs a complete Gradle build. Project-specific code can still require manual repair.
 
+## Separate 26.2 → 26.3 preview
+
+Minecraft 26.3 introduces a separate target contract with pack, worldgen, renderer, and SDL3 client changes. It is intentionally shipped as a standalone preview and does not change the proven legacy → 26.2 route. See [targets/rb-26.2-to-26.3/README.md](targets/rb-26.2-to-26.3/README.md) and [docs/RB-26.2-TO-26.3.md](docs/RB-26.2-TO-26.3.md).
+
 The vNext foundation adds a versioned conversion-manifest contract, reproducible release contents, golden transformation fixtures, and a JavaParser analysis worker. The AST worker currently runs at the analysis/shadow-comparison boundary only; production conversion still uses the proven deterministic PowerShell passes. See [docs/VNEXT-STATUS.md](docs/VNEXT-STATUS.md) for the exact boundary, validation stages, and reproducible commands.
 
 The rewrite stack was proven on:
