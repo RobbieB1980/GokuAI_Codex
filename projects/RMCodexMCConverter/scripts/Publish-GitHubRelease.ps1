@@ -39,10 +39,7 @@ $headers = @{
 $api = "https://api.github.com/repos/$Repo"
 
 function ConvertTo-JsonUtf8([hashtable]$Object) {
-    Add-Type -AssemblyName System.Web.Extensions -ErrorAction SilentlyContinue
-    $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-    $ser.MaxJsonLength = [int]::MaxValue
-    return $ser.Serialize($Object)
+    return ($Object | ConvertTo-Json -Compress -Depth 20)
 }
 
 function Invoke-GitHubJson([string]$Method, [string]$Uri, [hashtable]$BodyObj = $null) {
