@@ -31,7 +31,7 @@
     }
   },
   "modes": {
-    "fast": {"profile": "kat", "model_alias": "goku-local", "max_completion_tokens": 1024},
+    "fast": {"profile": "kat", "model_alias": "goku-local", "max_completion_tokens": 4096},
     "code": {"profile": "kat", "model_alias": "goku-local", "max_completion_tokens": 8192},
     "review": {"profile": "qwen38", "model_alias": "goku-local", "max_completion_tokens": 8192}
   },
@@ -45,10 +45,10 @@
     "reasoning": "on",
     "reasoning_effort": "medium",
     "reasoning_budget": 384,
-    "temperature": 0.6,
+    "temperature": 0.2,
     "top_p": 0.95,
     "top_k": 20,
-    "min_p": 0,
+    "min_p": 0.05,
     "repeat_penalty": 1.0,
     "speculative_decoding": "ngram-mod",
     "ngram_match": 24,

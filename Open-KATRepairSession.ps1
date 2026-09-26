@@ -75,7 +75,7 @@ if (-not $codexCommand) {
 }
 
 $prompt = "OPTIONAL BOUNDED WORKER. Read only $packetPath and its evidence paths. Do not edit source files. Write the required JSON result to $resultPath with status, diagnosis, files_changed, evidence_paths, validation, remaining_risks, and confidence, then stop."
-$args = @('-C',$project,'-s','read-only','-a','never','-m','goku-local','-c','model_provider="goku"','-c',"model_providers.goku.base_url=`"http://127.0.0.1:$Port/v1`"",$prompt)
+$args = @('-C',$project,'-s','read-only','-a','never','-m','goku-local','-c','model_provider="goku"','-c',"model_providers.goku.base_url=`"http://127.0.0.1:$Port/v1`"",'-c','model_context_window=196608','-c','model_auto_compact_token_limit=180000',$prompt)
 $process = Start-Process -FilePath $codexCommand.Source -ArgumentList $args -WorkingDirectory $project -PassThru
 if (-not $process) { Write-RecoverableStatus 'worker_unavailable' 'The optional local worker did not start.'; return }
 

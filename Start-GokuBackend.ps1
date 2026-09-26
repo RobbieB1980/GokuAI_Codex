@@ -42,7 +42,7 @@ $args = @(
     '--reasoning-budget','384','--reasoning-format','deepseek','--no-reasoning-preserve',
     '--spec-type','ngram-mod','--spec-ngram-mod-n-match','24',
     '--spec-ngram-mod-n-min','48','--spec-ngram-mod-n-max','64',
-    '--temp','0.6','--top-k','20','--top-p','0.95','--min-p','0',
+    '--temp','0.2','--top-k','20','--top-p','0.95','--min-p','0.05',
     '--presence-penalty','0','--repeat-penalty','1.0'
 )
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
